@@ -1,0 +1,1 @@
+# domoticz-solaredge-modbustcp-plugin
