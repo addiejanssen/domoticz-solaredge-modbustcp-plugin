@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# SolarEdge ModBusTCP
+# SolarEdge ModbusTCP
 #
 # Source:  https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin
 # Author:  Addie Janssen (https://addiejanssen.com)
@@ -10,7 +10,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModBusTCP" name="SolarEdge ModBusTCP" author="Addie Janssen" version="1.0.0" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.0" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -165,22 +165,22 @@ class Column(IntEnum):
 
 SINGLE_PHASE_INVERTER = [
 #   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,		   "Status",            0xF3,  0x13,	 0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,	 0x00,       {},	                 "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,		   "Current",           0xF3,  0x17,	 0x00,       {},	                 'current',	        'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_CURRENT,	   "P1 Current",        0xF3,  0x17,	 0x00,       {},	                 'p1_current',	    'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_VOLTAGE,	   "P1 Voltage",        0xF3,  0x08,	 0x00,       {},	                 'p1_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1N_VOLTAGE,	   "P1-N Voltage",      0xF3,  0x08,	 0x00,       {},	                 'p1n_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,		   "Power",             0xF8,  0x01,	 0x00,       {},	                 'power_ac',	    'power_ac_scale',       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,	   "Frequency",         0xF3,  0x1F,	 0x00,       { 'Custom': '1;Hz'  },  'frequency',	    'frequency_scale',      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,	 0x00,       { 'Custom': '1;VA'  },  'power_apparent',  'power_apparent_scale', "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,	 0x00,       { 'Custom': '1;VAr' },  'power_reactive',	'power_reactive_scale', "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,	   "Power Factor",      0xF3,  0x06,	 0x00,       {},	                 'power_factor',	'power_factor_scale',   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,	   "Total Energy",      0xF3,  0x1D,	 0x04,       {},                     'energy_total',    'energy_total_scale',   "{};{}",   Unit.POWER_AC,  None,                                  Average() ],
-    [Unit.CURRENT_DC,	   "DC Current",        0xF3,  0x17,	 0x00,       {},	                 'current_dc',	    'current_dc_scale',     "{:.2f}",  None,           None,                                  None      ],
-    [Unit.VOLTAGE_DC,	   "DC Voltage",        0xF3,  0x08,	 0x00,       {},	                 'voltage_dc',	    'voltage_dc_scale',     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,		   "DC Power",          0xF8,  0x01,	 0x00,       {},	                 'power_dc',	    'power_dc_scale',       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,	   "Temperature",       0x50,  0x05,	 0x00,       {},	                 'temperature',	    'temperature_scale',    "{:.2f}",  None,           None,                                  Maximum() ]
+    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
+    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
+    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1_CURRENT,      "P1 Current",        0xF3,  0x17,     0x00,       {},                     "p1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1_VOLTAGE,      "P1 Voltage",        0xF3,  0x08,     0x00,       {},                     "p1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1N_VOLTAGE,     "P1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  Average() ],
+    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  None      ],
+    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.TEMPERATURE,     "Temperature",       0x50,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
 ]
 
 #
@@ -189,28 +189,28 @@ SINGLE_PHASE_INVERTER = [
 
 THREE_PHASE_INVERTER = [
 #   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,		   "Status",            0xF3,  0x13,	 0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,	 0x00,       {},	                 "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,		   "Current",           0xF3,  0x17,	 0x00,       {},	                 'current',	        'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_CURRENT,	   "P1 Current",        0xF3,  0x17,	 0x00,       {},	                 'p1_current',	    'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2_CURRENT,	   "P2 Current",        0xF3,  0x17,	 0x00,       {},	                 'p2_current',	    'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3_CURRENT,	   "P3 Current",        0xF3,  0x17,	 0x00,       {},	                 'p3_current',	    'current_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_VOLTAGE,	   "P1 Voltage",        0xF3,  0x08,	 0x00,       {},	                 'p1_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2_VOLTAGE,	   "P2 Voltage",        0xF3,  0x08,	 0x00,       {},	                 'p2_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3_VOLTAGE,	   "P3 Voltage",        0xF3,  0x08,	 0x00,       {},	                 'p3_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1N_VOLTAGE,	   "P1-N Voltage",      0xF3,  0x08,	 0x00,       {},	                 'p1n_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2N_VOLTAGE,	   "P2-N Voltage",      0xF3,  0x08,	 0x00,       {},	                 'p2n_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3N_VOLTAGE,	   "P3-N Voltage",      0xF3,  0x08,	 0x00,       {},	                 'p3n_voltage',	    'voltage_scale',        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,		   "Power",             0xF8,  0x01,	 0x00,       {},	                 'power_ac',	    'power_ac_scale',       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,	   "Frequency",         0xF3,  0x1F,	 0x00,       { 'Custom': '1;Hz'  },  'frequency',	    'frequency_scale',      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,	 0x00,       { 'Custom': '1;VA'  },  'power_apparent',  'power_apparent_scale', "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,	 0x00,       { 'Custom': '1;VAr' },  'power_reactive',	'power_reactive_scale', "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,	   "Power Factor",      0xF3,  0x06,	 0x00,       {},	                 'power_factor',	'power_factor_scale',   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,	   "Total Energy",      0xF3,  0x1D,	 0x04,       {},                     'energy_total',    'energy_total_scale',   "{};{}",   Unit.POWER_AC,  None,                                  Average() ],
-    [Unit.CURRENT_DC,	   "DC Current",        0xF3,  0x17,	 0x00,       {},	                 'current_dc',	    'current_dc_scale',     "{:.2f}",  None,           None,                                  None      ],
-    [Unit.VOLTAGE_DC,	   "DC Voltage",        0xF3,  0x08,	 0x00,       {},	                 'voltage_dc',	    'voltage_dc_scale',     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,		   "DC Power",          0xF8,  0x01,	 0x00,       {},	                 'power_dc',	    'power_dc_scale',       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,	   "Temperature",       0x50,  0x05,	 0x00,       {},	                 'temperature',	    'temperature_scale',    "{:.2f}",  None,           None,                                  Maximum() ]
+    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
+    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
+    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1_CURRENT,      "P1 Current",        0xF3,  0x17,     0x00,       {},                     "p1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P2_CURRENT,      "P2 Current",        0xF3,  0x17,     0x00,       {},                     "p2_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P3_CURRENT,      "P3 Current",        0xF3,  0x17,     0x00,       {},                     "p3_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1_VOLTAGE,      "P1 Voltage",        0xF3,  0x08,     0x00,       {},                     "p1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P2_VOLTAGE,      "P2 Voltage",        0xF3,  0x08,     0x00,       {},                     "p2_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P3_VOLTAGE,      "P3 Voltage",        0xF3,  0x08,     0x00,       {},                     "p3_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P1N_VOLTAGE,     "P1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P2N_VOLTAGE,     "P2-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p2n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.P3N_VOLTAGE,     "P3-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p3n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  Average() ],
+    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  None      ],
+    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.TEMPERATURE,     "Temperature",       0x50,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
 ]
 
 #
@@ -398,7 +398,7 @@ class BasePlugin:
         # Try to contact the inverter when the lookup table is not yet initialized.
 
         else:
-            self.identifyInverter()
+            self.contactInverter()
 
 
     #
@@ -436,7 +436,7 @@ class BasePlugin:
                 if inverter_values:
                     Domoticz.Log("Connection established with: {}:{}".format(Parameters["Address"], Parameters["Port"]))
 
-                    inverter_type = solaredge_modbus.sunspecDID(inverter_values['c_sunspec_did'])
+                    inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                     Domoticz.Log("Inverter type: {}".format(inverter_type))
 
                     # The plugin currently has 2 supported types.
