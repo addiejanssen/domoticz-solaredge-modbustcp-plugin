@@ -62,6 +62,21 @@ To add the inverter, go to `Setup` -> `Hardware` and add the inverter:
 
 This should result in a lot of new devices in the `Setup` -> `Devices` menu.
 
+## Updating the plugin
+
+Go to the plugin folder and get the new verion:
+
+``` shell
+cd domoticz/plugins/domoticz-solaredge-modbustcp-plugin
+git pull
+```
+
+Once that is done, restart domoticz:
+
+``` shell
+sudo service domoticz.sh restart
+```
+
 ## Example
 
 Here's an example of information returned by an inverter (in this case a SE7000 3 phase inverter):
