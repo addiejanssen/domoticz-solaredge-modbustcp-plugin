@@ -1,4 +1,4 @@
-# Domoticz SolarEdge_ModBusTCP plugin
+# Domoticz SolarEdge_ModbusTCP plugin
 
 A Domoticz plugin to collect data from SolarEdge power inverters over ModbusTCP.
 
@@ -47,12 +47,12 @@ sudo service domoticz.sh restart
 
 ## Configuration in Domoticz
 
-Once the plugin is installed, a new hardware type will be available: `SolarEdge ModBusTCP`.
+Once the plugin is installed, a new hardware type will be available: `SolarEdge ModbusTCP`.
 
 To add the inverter, go to `Setup` -> `Hardware` and add the inverter:
 
 - Enter a `name` for the inverter.
-- Select `SolarEdge ModBusTCP` from the `type` dropdown list.
+- Select `SolarEdge ModbusTCP` from the `type` dropdown list.
 - Enter the IP address of the inverter in the `Inverter IP Address` field.
 - Enter the port number (default: 502) of the inverter in the `Inverter Port Number` field.
 - Select `Yes` in the `Add missing devices` to create the devices when the inverter is added. Select `No` after deleting unwanted devices. Leaving the option set to `Yes` will recreate the deleted devices once Domoticz is restarted.
