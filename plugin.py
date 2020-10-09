@@ -6,11 +6,10 @@
 # Source:  https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin
 # Author:  Addie Janssen (https://addiejanssen.com)
 # License: MIT
-# Version: 1.0.0
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.0" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.2" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -331,8 +330,14 @@ class BasePlugin:
 
                             if unit[Column.LOOKUP]:
                                 Domoticz.Debug("-> looking up...")
-                                lookup = unit[Column.LOOKUP]
-                                value = lookup[inverter_values[unit[Column.MODBUSNAME]]]
+
+                                lookup_table = unit[Column.LOOKUP]
+                                to_lookup = inverter_values[unit[Column.MODBUSNAME]]
+
+                                if to_lookup in lookup_table:
+                                    value = lookup_table[to_lookup]
+                                else:
+                                    value = "Key not found in lookup table: {}".format(to_lookup)
 
                             # When a math object is setup for the unit, update the samples in it and get the calculated value.
 
