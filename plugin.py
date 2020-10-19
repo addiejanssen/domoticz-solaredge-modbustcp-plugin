@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.5" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.6" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -26,6 +26,12 @@
                 <option label="20 seconds" value="20" />
                 <option label="30 seconds" value="30" />
                 <option label="60 seconds" value="60" />
+            </options>
+        </param>
+        <param field="Mode5" label="Log level" width="100px">
+            <options>
+                <option label="Normal" value="Normal" default="true" />
+                <option label="Extra" value="Extra"/>
             </options>
         </param>
         <param field="Mode6" label="Debug" width="100px">
@@ -309,7 +315,11 @@ class BasePlugin:
 
                 if inverter_values:
 
-                    Domoticz.Debug(json.dumps(inverter_values, indent=4, sort_keys=True))
+                    if "Mode5" in Parameters and Parameters["Mode5"] == "Extra":
+                        to_log = inverter_values
+                        if "c_serialnumber" in to_log:
+                            to_log.pop("c_serialnumber")
+                        Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
 
                     # Just for cosmetics in the log
 
