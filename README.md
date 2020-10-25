@@ -12,31 +12,32 @@ The inverter needs to be connected to the network (either wired or wireless) and
 
 This guide is based on Ubuntu 20.04 LTS:
 
-Install `domoticz`:
-
-``` shell
-curl -sSL install.domoticz.com | sudo bash
-```
-
 Install `pip3`:
 
 ``` shell
 sudo apt install python3-pip
 ```
 
-Install the `solaredge_modbus` library:
+Install `domoticz`:
 
 ``` shell
-sudo pip3 install solaredge_modbus
+curl -sSL install.domoticz.com | sudo bash
 ```
 
 Make sure that the `plugins` folder exists in the `domoticz` folder.
 
-Install the plugin itself:
+Install the plugin:
 
 ``` shell
 cd domoticz/plugins
 git clone https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin.git
+```
+
+Go to the plugin folder and install all required addons:
+
+``` shell
+cd domoticz/plugins/domoticz-solaredge-modbustcp-plugin
+sudo pip3 install -r requirements.txt
 ```
 
 Once that is done, restart domoticz:
@@ -57,6 +58,7 @@ To add the inverter, go to `Setup` -> `Hardware` and add the inverter:
 - Enter the port number (default: 502) of the inverter in the `Inverter Port Number` field.
 - Select `Yes` in the `Add missing devices` to create the devices when the inverter is added. Select `No` after deleting unwanted devices. Leaving the option set to `Yes` will recreate the deleted devices once Domoticz is restarted.
 - Select an `Interval` (default: 5 seconds); this defines how often the plugin will collect the data from the inverter. Short intervals will result in more accurate values and graphs, but also result in more network traffic and a higher workload for both Domoticz and the inverter.
+- Optionally change the `Log level`; this defaults to `Normal`. When selecting `Extra`, the plugin will print all the information it received from the inverter in the log.
 - Optionally turn on `Debug`; be aware: this will generate a lot of entries in the Domoticz log!
 - `Add` the inverter.
 
