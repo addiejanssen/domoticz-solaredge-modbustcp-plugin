@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🙏 Q&A
+    url: https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/discussions/new?category=q-a
+    about: Ask the community for help
+  - name: 💡 Ideas
+    url: https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/discussions/new?category=Ideas
+    about: Share ideas for new features
