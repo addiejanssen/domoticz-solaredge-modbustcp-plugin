@@ -21,6 +21,7 @@
         </param>
         <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
             <options>
+                <option label="1  second"  value="1" />                
                 <option label="5  seconds" value="5" default="true" />
                 <option label="10 seconds" value="10" />
                 <option label="20 seconds" value="20" />
@@ -28,16 +29,17 @@
                 <option label="60 seconds" value="60" />
             </options>
         </param>
+        <param field="Mode4" label="Auto Avg/Max math" width="100px">
+            <options>
+                <option label="Enabled" value="math_enabled"/>
+                <option label="Disabled" value="math_disabled" default="true" />
+            </options>
+        </param>
         <param field="Mode5" label="Log level" width="100px">
             <options>
                 <option label="Normal" value="Normal" default="true" />
                 <option label="Extra" value="Extra"/>
-            </options>
-        </param>
-        <param field="Mode6" label="Debug" width="100px">
-            <options>
-                <option label="True" value="Debug"/>
-                <option label="False" value="Normal" default="true" />
+                <option label="Debug" value="Debug"/>
             </options>
         </param>
     </params>
@@ -268,7 +270,7 @@ class BasePlugin:
 
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
-        if Parameters["Mode6"] == "Debug":
+        if Parameters["Mode5"] == "Debug":
             Domoticz.Debugging(1)
         else:
             Domoticz.Debugging(0)
@@ -315,7 +317,7 @@ class BasePlugin:
 
                 if inverter_values:
 
-                    if "Mode5" in Parameters and Parameters["Mode5"] == "Extra":
+                    if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
                         to_log = inverter_values
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
@@ -351,7 +353,7 @@ class BasePlugin:
 
                             # When a math object is setup for the unit, update the samples in it and get the calculated value.
 
-                            elif unit[Column.MATH]:
+                            elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
                                 Domoticz.Debug("-> calculating...")
                                 m = unit[Column.MATH]
                                 if unit[Column.MODBUSSCALE]:
@@ -469,7 +471,7 @@ class BasePlugin:
                         # Set the number of samples on all the math objects.
 
                         for unit in self._LOOKUP_TABLE:
-                            if unit[Column.MATH]:
+                            if unit[Column.MATH]  and Parameters["Mode4"] == "math_enabled":
                                 unit[Column.MATH].set_max_samples(self.max_samples)
 
 
