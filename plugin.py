@@ -367,7 +367,7 @@ class BasePlugin:
                             # Some values from the inverter need to be scaled before they can be stored.
 
                             elif unit[Column.MODBUSSCALE]:
-                                Domoticz.Debug("-> calculating...")
+                                Domoticz.Debug("-> scaling...")
                                 # we need to do some calculation here
                                 value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
 
