@@ -31,8 +31,8 @@
         </param>
         <param field="Mode4" label="Auto Avg/Max math" width="100px">
             <options>
-                <option label="Enabled" value="math_enabled"/>
-                <option label="Disabled" value="math_disabled" default="true" />
+                <option label="Enabled" value="math_enabled" default="true" />
+                <option label="Disabled" value="math_disabled"/>
             </options>
         </param>
         <param field="Mode5" label="Log level" width="100px">
