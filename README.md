@@ -56,9 +56,7 @@ The installation documentation states:
 > When launching the docker container for the first time, a plugin folder is created in the userdata folder. You need to place your python plugins is folder.
 
 You will need to start Domoticz once to create the data in that userdata folder.
-Once the folder is initialize, we can add the plugin.
-
-Install the plugin:
+Once the folder is initialized, we can install the plugin:
 
 ``` shell
 cd <path for config files>/plugins
@@ -74,7 +72,7 @@ Connect to the running container
 docker exec -it domoticz
 ```
 
-Go to the plugin folder and install all required addons:
+Go to the plugin folder and install all required addons in the plugin folder:
 
 ``` shell
 cd userdata/plugins/domoticz-solaredge-modbustcp-plugin
