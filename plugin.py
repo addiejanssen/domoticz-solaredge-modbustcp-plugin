@@ -13,6 +13,7 @@
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
+        <param field="Mode6" label="Inverter Unit Number" width="100px" required="true" default="1" />
         <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
             <options>
                 <option label="Yes" value="Yes" default="true" />
@@ -276,9 +277,10 @@ class BasePlugin:
             Domoticz.Debugging(0)
 
         Domoticz.Debug(
-            "onStart Address: {} Port: {}".format(
+            "onStart Address: {} Port: {} Unit: {}".format(
                 Parameters["Address"],
-                Parameters["Port"]
+                Parameters["Port"],
+                Parameters["Mode6"]
             )
         )
 
@@ -286,7 +288,7 @@ class BasePlugin:
             host=Parameters["Address"],
             port=Parameters["Port"],
             timeout=5,
-            unit=1
+            unit=int(Parameters["Mode6"]) if Parameters["Mode6"] else 1
         )
 
         # Lets get in touch with the inverter.
@@ -445,13 +447,13 @@ class BasePlugin:
                 self.retryafter = datetime.now() + self.retrydelay
                 inverter_values = None
 
-                Domoticz.Log("Connection Exception when trying to contact: {}:{}".format(Parameters["Address"], Parameters["Port"]))
+                Domoticz.Log("Connection Exception when trying to contact: {}:{} Unit: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode6"]))
                 Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
 
             else:
 
                 if inverter_values:
-                    Domoticz.Log("Connection established with: {}:{}".format(Parameters["Address"], Parameters["Port"]))
+                    Domoticz.Log("Connection established with: {}:{} Unit: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode6"]))
 
                     inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                     Domoticz.Log("Inverter type: {}".format(inverter_type))
@@ -516,7 +518,7 @@ class BasePlugin:
                                         Used=1,
                                     ).Create()
                 else:
-                    Domoticz.Log("Connection established with: {}:{}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"]))
+                    Domoticz.Log("Connection established with: {}:{} Unit: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode6"]))
                     Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
         else:
             Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
