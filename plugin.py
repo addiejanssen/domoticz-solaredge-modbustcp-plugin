@@ -21,7 +21,10 @@
         </param>
         <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
             <options>
-                <option label="1  second"  value="1" />                
+                <option label="1  second"  value="1" />
+                <option label="2  seconds" value="2" />
+                <option label="3  seconds" value="3" />
+                <option label="4  seconds" value="4" />
                 <option label="5  seconds" value="5" default="true" />
                 <option label="10 seconds" value="10" />
                 <option label="20 seconds" value="20" />
@@ -125,15 +128,15 @@ class Unit(IntEnum):
     STATUS          = 1
     VENDOR_STATUS   = 2
     CURRENT         = 3
-    P1_CURRENT      = 4
-    P2_CURRENT      = 5
-    P3_CURRENT      = 6
-    P1_VOLTAGE      = 7
-    P2_VOLTAGE      = 8
-    P3_VOLTAGE      = 9
-    P1N_VOLTAGE     = 10
-    P2N_VOLTAGE     = 11
-    P3N_VOLTAGE     = 12
+    L1_CURRENT      = 4
+    L2_CURRENT      = 5
+    L3_CURRENT      = 6
+    L1_VOLTAGE      = 7
+    L2_VOLTAGE      = 8
+    L3_VOLTAGE      = 9
+    L1N_VOLTAGE     = 10
+    L2N_VOLTAGE     = 11
+    L3N_VOLTAGE     = 12
     POWER_AC        = 13
     FREQUENCY       = 14
     POWER_APPARENT  = 15
@@ -175,9 +178,9 @@ SINGLE_PHASE_INVERTER = [
     [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
     [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
     [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_CURRENT,      "P1 Current",        0xF3,  0x17,     0x00,       {},                     "p1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_VOLTAGE,      "P1 Voltage",        0xF3,  0x08,     0x00,       {},                     "p1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1N_VOLTAGE,     "P1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
     [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
@@ -199,15 +202,15 @@ THREE_PHASE_INVERTER = [
     [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
     [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
     [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_CURRENT,      "P1 Current",        0xF3,  0x17,     0x00,       {},                     "p1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2_CURRENT,      "P2 Current",        0xF3,  0x17,     0x00,       {},                     "p2_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3_CURRENT,      "P3 Current",        0xF3,  0x17,     0x00,       {},                     "p3_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1_VOLTAGE,      "P1 Voltage",        0xF3,  0x08,     0x00,       {},                     "p1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2_VOLTAGE,      "P2 Voltage",        0xF3,  0x08,     0x00,       {},                     "p2_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3_VOLTAGE,      "P3 Voltage",        0xF3,  0x08,     0x00,       {},                     "p3_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P1N_VOLTAGE,     "P1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P2N_VOLTAGE,     "P2-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p2n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.P3N_VOLTAGE,     "P3-N Voltage",      0xF3,  0x08,     0x00,       {},                     "p3n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L2_CURRENT,      "L2 Current",        0xF3,  0x17,     0x00,       {},                     "l2_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L3_CURRENT,      "L3 Current",        0xF3,  0x17,     0x00,       {},                     "l3_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L2_VOLTAGE,      "L2 Voltage",        0xF3,  0x08,     0x00,       {},                     "l2_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L3_VOLTAGE,      "L3 Voltage",        0xF3,  0x08,     0x00,       {},                     "l3_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L2N_VOLTAGE,     "L2-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l2n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
+    [Unit.L3N_VOLTAGE,     "L3-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l3n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
     [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
