@@ -91,6 +91,7 @@ To add the inverter, go to `Setup` -> `Hardware` and add the inverter:
 - Select `SolarEdge ModbusTCP` from the `type` dropdown list.
 - Enter the IP address of the inverter in the `Inverter IP Address` field.
 - Enter the port number (default: 502) of the inverter in the `Inverter Port Number` field.
+- Enter the Modbus device address (default: 1) of the inverter in the `Inverter Modbus device address` field.
 - Select `Yes` in the `Add missing devices` to create the devices when the inverter is added. Select `No` after deleting unwanted devices. Leaving the option set to `Yes` will recreate the deleted devices once Domoticz is restarted.
 - Select an `Interval` (default: 5 seconds); this defines how often the plugin will collect the data from the inverter. Short intervals will result in more accurate values and graphs, but also result in more network traffic and a higher workload for both Domoticz and the inverter.
 - Optionally change the `Auto Avg/Max math`; this defaults to `Enabled` which means that the Domoticz graphs for most values will be averaged over time. When selecting `Disabled`, the calculations will be disabled and the Domoticz graphs will be based on the last retrieved value.
@@ -101,11 +102,14 @@ This should result in a lot of new devices in the `Setup` -> `Devices` menu.
 
 ## Updating the plugin
 
+### Domoticz running on Ubuntu 20.04 LTS
+
 Go to the plugin folder and get the new version:
 
 ``` shell
 cd domoticz/plugins/domoticz-solaredge-modbustcp-plugin
 git pull
+sudo pip3 install -r requirements.txt
 ```
 
 Once that is done, restart domoticz:
@@ -113,6 +117,24 @@ Once that is done, restart domoticz:
 ``` shell
 sudo service domoticz.sh restart
 ```
+
+### Domoticz running inside Docker
+
+Connect to the running container
+
+``` shell
+docker exec -it domoticz
+```
+
+Go to the plugin folder and install all required addons in the plugin folder:
+
+``` shell
+cd userdata/plugins/domoticz-solaredge-modbustcp-plugin
+git pull
+pip3 install -r requirements.txt -t .
+```
+
+Once that is done, restart the domoticz container.
 
 ## Example
 
@@ -128,15 +150,15 @@ Here's an example of information returned by an inverter (in this case a SE7000 
 | Status            | Producing             |        |
 | Vendor Status     | 0                     |        |
 | Current           | 3.59                  |    A   |
-| P1 Current        | 1.21                  |    A   |
-| P2 Current        | 1.17                  |    A   |
-| P3 Current        | 1.20                  |    A   |
-| P1 Voltage        | 401.4                 |    V   |
-| P2 Voltage        | 401.2                 |    V   |
-| P3 Voltage        | 402.8                 |    V   |
-| P1-N Voltage      | 230.1                 |    V   |
-| P2-N Voltage      | 232.7                 |    V   |
-| P3-N Voltage      | 230.4                 |    V   |
+| L1 Current        | 1.21                  |    A   |
+| L2 Current        | 1.17                  |    A   |
+| L3 Current        | 1.20                  |    A   |
+| L1 Voltage        | 401.4                 |    V   |
+| L2 Voltage        | 401.2                 |    V   |
+| L3 Voltage        | 402.8                 |    V   |
+| L1-N Voltage      | 230.1                 |    V   |
+| L2-N Voltage      | 232.7                 |    V   |
+| L3-N Voltage      | 230.4                 |    V   |
 | Power             | 784.0                 |    W   |
 | Frequency         | 50.01                 |   Hz   |
 | Power (Apparent)  | 829.1                 |   VA   |
@@ -147,21 +169,3 @@ Here's an example of information returned by an inverter (in this case a SE7000 
 | DC Voltage        | 747.5                 |    V   |
 | DC Power          | 795.9                 |    W   |
 | Temperature       | 43.53                 |   °C   |
-
-## Screenshots
-
-Hardware page showing a configured inverter.
-
-![](screenshots/Hardware.png)
-
-The devices page shows all Domoticz devices that were created for the inverter.
-
-![](screenshots/Devices.png)
-
-The Domoticz Temperature page shows the inverters temperature data.
-
-![](screenshots/Temperature.png)
-
-All the other information is visible in the Domoticz Utility page.
-
-![](screenshots/Utility.png)
