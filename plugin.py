@@ -9,18 +9,18 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.9" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.0.10" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
-        <param field="Mode1" label="Inverter Modbus device address" width="100px" required="true" default="1" />
-        <param field="Mode2" label="Add missing devices" width="100px" required="true" default="Yes" >
+        <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1" />
+        <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
             <options>
                 <option label="Yes" value="Yes" default="true" />
                 <option label="No" value="No" />
             </options>
         </param>
-        <param field="Mode3" label="Interval" width="100px" required="true" default="5" >
+        <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
             <options>
                 <option label="1  second"  value="1" />                
                 <option label="5  seconds" value="5" default="true" />
@@ -260,16 +260,16 @@ class BasePlugin:
 
     def onStart(self):
 
-        self.add_devices = bool(Parameters["Mode2"])
+        self.add_devices = bool(Parameters["Mode1"])
 
         # Domoticz will generate graphs showing an interval of 5 minutes.
         # Calculate the number of samples to store over a period of 5 minutes.
 
-        self.max_samples = 300 / int(Parameters["Mode3"])
+        self.max_samples = 300 / int(Parameters["Mode2"])
 
         # Now set the interval at which the information is collected accordingly.
 
-        Domoticz.Heartbeat(int(Parameters["Mode3"]))
+        Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
         if Parameters["Mode5"] == "Debug":
             Domoticz.Debugging(1)
@@ -280,7 +280,7 @@ class BasePlugin:
             "onStart Address: {} Port: {} Device Address: {}".format(
                 Parameters["Address"],
                 Parameters["Port"],
-                Parameters["Mode1"]
+                Parameters["Mode3"]
             )
         )
 
@@ -288,7 +288,7 @@ class BasePlugin:
             host=Parameters["Address"],
             port=Parameters["Port"],
             timeout=5,
-            unit=int(Parameters["Mode1"]) if Parameters["Mode1"] else 1
+            unit=int(Parameters["Mode3"]) if Parameters["Mode3"] else 1
         )
 
         # Lets get in touch with the inverter.
@@ -447,13 +447,13 @@ class BasePlugin:
                 self.retryafter = datetime.now() + self.retrydelay
                 inverter_values = None
 
-                Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode1"]))
+                Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                 Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
 
             else:
 
                 if inverter_values:
-                    Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode1"]))
+                    Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                     inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                     Domoticz.Log("Inverter type: {}".format(inverter_type))
@@ -518,7 +518,7 @@ class BasePlugin:
                                         Used=1,
                                     ).Create()
                 else:
-                    Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode1"]))
+                    Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                     Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
         else:
             Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
