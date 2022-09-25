@@ -185,13 +185,6 @@ class BasePlugin:
                             to_log.pop("c_serialnumber")
                         Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
 
-                    # Just for cosmetics in the log
-
-                    updated = 0
-                    device_count = 0
-
-                    # Now process each unit in the table.
-
                     self.process(0, self._LOOKUP_TABLE, inverter_values)
                 else:
                     Domoticz.Log("Inverter returned no information")
@@ -209,6 +202,13 @@ class BasePlugin:
     #
     
     def process(self, offset, table, values):
+
+        # Just for cosmetics in the log
+
+        updated = 0
+        device_count = 0
+
+        # Now process each unit in the table.
 
         for unit in table:
             Domoticz.Debug(str(unit))
