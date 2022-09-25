@@ -185,7 +185,7 @@ class BasePlugin:
                             to_log.pop("c_serialnumber")
                         Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
 
-                    self.process(0, self._LOOKUP_TABLE, inverter_values)
+                    self.process(1000, self._LOOKUP_TABLE, inverter_values)
                 else:
                     Domoticz.Log("Inverter returned no information")
 
