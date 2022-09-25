@@ -185,7 +185,7 @@ class BasePlugin:
                             to_log.pop("c_serialnumber")
                         Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
 
-                    self.process(1000, self._LOOKUP_TABLE, inverter_values)
+                    self.process(self._DEVICE_OFFSET, self._LOOKUP_TABLE, inverter_values)
                 else:
                     Domoticz.Log("Inverter returned no information")
 
@@ -338,6 +338,7 @@ class BasePlugin:
                         self._LOOKUP_TABLE = inverter_tables.THREE_PHASE_INVERTER
                     else:
                         Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
+                    self._DEVICE_OFFSET = 1000      # for testing purposes only
 
                     if self._LOOKUP_TABLE:
 
@@ -353,7 +354,7 @@ class BasePlugin:
 
                         for unit in self._LOOKUP_TABLE:
                             if unit[Column.ID] in Devices:
-                                device = Devices[unit[Column.ID]]
+                                device = Devices[unit[Column.ID] + self._DEVICE_OFFSET]
                                 
                                 if (device.Type != unit[Column.TYPE] or
                                     device.SubType != unit[Column.SUBTYPE] or
@@ -378,9 +379,9 @@ class BasePlugin:
 
                         if self.add_devices:
                             for unit in self._LOOKUP_TABLE:
-                                if unit[Column.ID] not in Devices:
+                                if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
                                     Domoticz.Device(
-                                        Unit=unit[Column.ID],
+                                        Unit=unit[Column.ID] + self._DEVICE_OFFSET,
                                         Name=unit[Column.NAME],
                                         Type=unit[Column.TYPE],
                                         Subtype=unit[Column.SUBTYPE],
