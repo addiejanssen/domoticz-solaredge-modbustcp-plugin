@@ -215,7 +215,7 @@ class BasePlugin:
 
             # Skip a unit when the matching device got deleted.
 
-            if unit[Column.ID + offset] in Devices:
+            if (unit[Column.ID] + offset) in Devices:
                 Domoticz.Debug("-> found in Devices")
 
                 # For certain units the table has a lookup table to replace the value with something else.
