@@ -380,7 +380,6 @@ class BasePlugin:
                         if self.add_devices:
                             for unit in self._LOOKUP_TABLE:
                                 if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
-                                    Domoticz.Log("Adding device column.id: {}, device offset: {}", Column.ID, self._DEVICE_OFFSET)
                                     Domoticz.Device(
                                         Unit=unit[Column.ID] + self._DEVICE_OFFSET,
                                         Name=unit[Column.NAME],
