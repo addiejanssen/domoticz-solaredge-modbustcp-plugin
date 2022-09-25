@@ -338,7 +338,7 @@ class BasePlugin:
                         self._LOOKUP_TABLE = inverter_tables.THREE_PHASE_INVERTER
                     else:
                         Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
-                    self._DEVICE_OFFSET = 1000      # for testing purposes only
+                    self._DEVICE_OFFSET = 50      # for testing purposes only
 
                     if self._LOOKUP_TABLE:
 
@@ -380,6 +380,7 @@ class BasePlugin:
                         if self.add_devices:
                             for unit in self._LOOKUP_TABLE:
                                 if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
+                                    Domoticz.Log("Adding device column.id: {}, device offset: {}", Column.ID, self._DEVICE_OFFSET)
                                     Domoticz.Device(
                                         Unit=unit[Column.ID] + self._DEVICE_OFFSET,
                                         Name=unit[Column.NAME],
