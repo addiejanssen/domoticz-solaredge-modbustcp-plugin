@@ -192,85 +192,7 @@ class BasePlugin:
 
                     # Now process each unit in the table.
 
-                    for unit in self._LOOKUP_TABLE:
-                        Domoticz.Debug(str(unit))
-
-                        # Skip a unit when the matching device got deleted.
-
-                        if unit[Column.ID] in Devices:
-                            Domoticz.Debug("-> found in Devices")
-
-                            # For certain units the table has a lookup table to replace the value with something else.
-
-                            if unit[Column.LOOKUP]:
-                                Domoticz.Debug("-> looking up...")
-
-                                lookup_table = unit[Column.LOOKUP]
-                                to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
-
-                                if to_lookup >= 0 and to_lookup < len(lookup_table):
-                                    value = lookup_table[to_lookup]
-                                else:
-                                    value = "Key not found in lookup table: {}".format(to_lookup)
-
-                            # When a math object is setup for the unit, update the samples in it and get the calculated value.
-
-                            elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
-                                Domoticz.Debug("-> calculating...")
-                                m = unit[Column.MATH]
-                                if unit[Column.MODBUSSCALE]:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
-                                else:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]])
-
-                                value = m.get()
-
-                            # When there is no math object then just store the latest value.
-                            # Some values from the inverter need to be scaled before they can be stored.
-
-                            elif unit[Column.MODBUSSCALE]:
-                                Domoticz.Debug("-> scaling...")
-                                # we need to do some calculation here
-                                value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
-
-                            # Some values require no action but storing in Domoticz.
-
-                            else:
-                                Domoticz.Debug("-> copying...")
-                                value = inverter_values[unit[Column.MODBUSNAME]]
-
-                            Domoticz.Debug("value = {}".format(value))
-
-                            # Time to store the value in Domoticz.
-                            # Some devices require multiple values, in which case the plugin will combine those values.
-                            # Currently, there is only a need to prepend one value with another.
-
-                            if unit[Column.PREPEND]:
-                                Domoticz.Debug("-> has prepend")
-                                prepend = Devices[unit[Column.PREPEND]].sValue
-                                Domoticz.Debug("prepend = {}".format(prepend))
-                                sValue = unit[Column.FORMAT].format(prepend, value)
-                            else:
-                                Domoticz.Debug("-> no prepend")
-                                sValue = unit[Column.FORMAT].format(value)
-
-                            Domoticz.Debug("sValue = {}".format(sValue))
-
-                            # Only store the value in Domoticz when it has changed.
-                            # TODO:
-                            #   We should not store certain values when the inverter is sleeping.
-                            #   That results in a strange graph; it would be better just to skip it then.
-
-                            if sValue != Devices[unit[Column.ID]].sValue:
-                                Devices[unit[Column.ID]].Update(nValue=0, sValue=str(sValue), TimedOut=0)
-                                updated += 1
-
-                            device_count += 1
-
-                        else:
-                            Domoticz.Debug("-> NOT found in Devices")
-
-                    Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
+                    self.process(0, self._LOOKUP_TABLE, inverter_values)
                 else:
                     Domoticz.Log("Inverter returned no information")
 
@@ -278,6 +200,95 @@ class BasePlugin:
 
         else:
             self.contactInverter()
+
+
+
+    #
+    # Go through the table and update matching devices
+    # with the new values.
+    #
+    
+    def process(offset, table, values):
+
+        for unit in table:
+            Domoticz.Debug(str(unit))
+
+            # Skip a unit when the matching device got deleted.
+
+            if unit[Column.ID + offset] in Devices:
+                Domoticz.Debug("-> found in Devices")
+
+                # For certain units the table has a lookup table to replace the value with something else.
+
+                if unit[Column.LOOKUP]:
+                    Domoticz.Debug("-> looking up...")
+
+                    lookup_table = unit[Column.LOOKUP]
+                    to_lookup = int(values[unit[Column.MODBUSNAME]])
+
+                    if to_lookup >= 0 and to_lookup < len(lookup_table):
+                        value = lookup_table[to_lookup]
+                    else:
+                        value = "Key not found in lookup table: {}".format(to_lookup)
+
+                # When a math object is setup for the unit, update the samples in it and get the calculated value.
+
+                elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
+                    Domoticz.Debug("-> calculating...")
+                    m = unit[Column.MATH]
+                    if unit[Column.MODBUSSCALE]:
+                        m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
+                    else:
+                        m.update(values[unit[Column.MODBUSNAME]])
+
+                    value = m.get()
+
+                # When there is no math object then just store the latest value.
+                # Some values from the inverter need to be scaled before they can be stored.
+
+                elif unit[Column.MODBUSSCALE]:
+                    Domoticz.Debug("-> scaling...")
+                    # we need to do some calculation here
+                    value = values[unit[Column.MODBUSNAME]] * (10 ** values[unit[Column.MODBUSSCALE]])
+
+                # Some values require no action but storing in Domoticz.
+
+                else:
+                    Domoticz.Debug("-> copying...")
+                    value = values[unit[Column.MODBUSNAME]]
+
+                Domoticz.Debug("value = {}".format(value))
+
+                # Time to store the value in Domoticz.
+                # Some devices require multiple values, in which case the plugin will combine those values.
+                # Currently, there is only a need to prepend one value with another.
+
+                if unit[Column.PREPEND]:
+                    Domoticz.Debug("-> has prepend")
+                    prepend = Devices[unit[Column.PREPEND] + offset].sValue
+                    Domoticz.Debug("prepend = {}".format(prepend))
+                    sValue = unit[Column.FORMAT].format(prepend, value)
+                else:
+                    Domoticz.Debug("-> no prepend")
+                    sValue = unit[Column.FORMAT].format(value)
+
+                Domoticz.Debug("sValue = {}".format(sValue))
+
+                # Only store the value in Domoticz when it has changed.
+                # TODO:
+                #   We should not store certain values when the inverter is sleeping.
+                #   That results in a strange graph; it would be better just to skip it then.
+
+                if sValue != Devices[unit[Column.ID] + offset].sValue:
+                    Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
+                    updated += 1
+
+                device_count += 1
+
+            else:
+                Domoticz.Debug("-> NOT found in Devices")
+
+        Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
 
 
     #
