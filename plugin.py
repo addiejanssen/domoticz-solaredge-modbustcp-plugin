@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.0" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -54,100 +54,11 @@ import Domoticz
 import solaredge_modbus
 import json
 
+import inverter_tables
+
 from datetime import datetime, timedelta
 from enum import IntEnum, unique, auto
 from pymodbus.exceptions import ConnectionException
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Average class can be used to calculate the average value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Average:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        Domoticz.Debug("Average: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return sum(self.samples) / len(self.samples)
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Maximum class can be used to calculate the highest value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Maximum:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        Domoticz.Debug("Maximum: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return max(self.samples)
-
-#
-# The Unit class lists all possible pieces of information that can be retrieved from the inverter.
-#
-# Not all inverters will support all these options.
-# The class is used to generate a unique id for each device in Domoticz.
-#
-
-@unique
-class Unit(IntEnum):
-
-    STATUS          = 1
-    VENDOR_STATUS   = 2
-    CURRENT         = 3
-    L1_CURRENT      = 4
-    L2_CURRENT      = 5
-    L3_CURRENT      = 6
-    L1_VOLTAGE      = 7
-    L2_VOLTAGE      = 8
-    L3_VOLTAGE      = 9
-    L1N_VOLTAGE     = 10
-    L2N_VOLTAGE     = 11
-    L3N_VOLTAGE     = 12
-    POWER_AC        = 13
-    FREQUENCY       = 14
-    POWER_APPARENT  = 15
-    POWER_REACTIVE  = 16
-    POWER_FACTOR    = 17
-    ENERGY_TOTAL    = 18
-    CURRENT_DC      = 19
-    VOLTAGE_DC      = 20
-    POWER_DC        = 21
-    TEMPERATURE     = 22
 
 #
 # The plugin is using a few tables to setup Domoticz and to process the feedback from the inverter.
@@ -169,60 +80,6 @@ class Column(IntEnum):
     PREPEND         = 9
     LOOKUP          = 10
     MATH            = 11
-
-#
-# This table represents a single phase inverter.
-#
-
-SINGLE_PHASE_INVERTER = [
-#   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  None      ],
-    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
-]
-
-#
-# This table represents a three phase inverter.
-#
-
-THREE_PHASE_INVERTER = [
-#   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2_CURRENT,      "L2 Current",        0xF3,  0x17,     0x00,       {},                     "l2_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3_CURRENT,      "L3 Current",        0xF3,  0x17,     0x00,       {},                     "l3_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2_VOLTAGE,      "L2 Voltage",        0xF3,  0x08,     0x00,       {},                     "l2_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3_VOLTAGE,      "L3 Voltage",        0xF3,  0x08,     0x00,       {},                     "l3_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2N_VOLTAGE,     "L2-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l2n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3N_VOLTAGE,     "L3-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l3n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  None      ],
-    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
-]
 
 #
 # The BasePlugin is the actual Domoticz plugin.
@@ -465,9 +322,9 @@ class BasePlugin:
                     # This may be updated in the future based on user feedback.
 
                     if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = SINGLE_PHASE_INVERTER
+                        self._LOOKUP_TABLE = inverter_tables.SINGLE_PHASE_INVERTER
                     elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = THREE_PHASE_INVERTER
+                        self._LOOKUP_TABLE = inverter_tables.THREE_PHASE_INVERTER
                     else:
                         Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
 
