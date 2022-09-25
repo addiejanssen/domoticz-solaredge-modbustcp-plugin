@@ -208,7 +208,7 @@ class BasePlugin:
     # with the new values.
     #
     
-    def process(offset, table, values):
+    def process(self, offset, table, values):
 
         for unit in table:
             Domoticz.Debug(str(unit))
