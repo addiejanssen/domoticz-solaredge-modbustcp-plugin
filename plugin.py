@@ -406,7 +406,7 @@ class BasePlugin:
                                 if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
                                     Domoticz.Device(
                                         Unit=unit[Column.ID] + self._DEVICE_OFFSET,
-                                        Name=unit[Column.NAME],
+                                        Name="Meter 1 " + unit[Column.NAME],
                                         Type=unit[Column.TYPE],
                                         Subtype=unit[Column.SUBTYPE],
                                         Switchtype=unit[Column.SWITCHTYPE],
