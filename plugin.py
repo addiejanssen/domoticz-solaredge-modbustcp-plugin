@@ -380,7 +380,8 @@ class BasePlugin:
                             if unit[Column.ID] in Devices:
                                 device = Devices[unit[Column.ID] + self._DEVICE_OFFSET]
                                 
-                                if (device.Type != unit[Column.TYPE] or
+                                if (device.Name != "Meter 1 - " + unit[Column.NAME],
+                                    device.Type != unit[Column.TYPE] or
                                     device.SubType != unit[Column.SUBTYPE] or
                                     device.SwitchType != unit[Column.SWITCHTYPE] or
                                     device.Options != unit[Column.OPTIONS]):
@@ -406,7 +407,7 @@ class BasePlugin:
                                 if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
                                     Domoticz.Device(
                                         Unit=unit[Column.ID] + self._DEVICE_OFFSET,
-                                        Name="Meter 1 " + unit[Column.NAME],
+                                        Name="Meter 1 - " + unit[Column.NAME],
                                         Type=unit[Column.TYPE],
                                         Subtype=unit[Column.SUBTYPE],
                                         Switchtype=unit[Column.SWITCHTYPE],
