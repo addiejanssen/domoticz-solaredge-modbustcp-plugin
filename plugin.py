@@ -384,7 +384,7 @@ class BasePlugin:
 
                                 Domoticz.Log("Device name: \"{}\"".format(device.Name))
 
-                                if (device.Name != ("Meter 1 - " + unit[Column.NAME]),
+                                if (device.Name != "Meter 1 - " + unit[Column.NAME],
                                     device.Type != unit[Column.TYPE] or
                                     device.SubType != unit[Column.SUBTYPE] or
                                     device.SwitchType != unit[Column.SWITCHTYPE] or
@@ -396,6 +396,7 @@ class BasePlugin:
                                     sValue = device.sValue
 
                                     device.Update(
+                                            Name="Meter 1 - " + unit[Column.NAME],
                                             Type=unit[Column.TYPE],
                                             Subtype=unit[Column.SUBTYPE],
                                             Switchtype=unit[Column.SWITCHTYPE],
