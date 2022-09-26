@@ -379,7 +379,7 @@ class BasePlugin:
                         for unit in self._LOOKUP_TABLE:
 
                             Domoticz.Log("Updating devices if needed")
-                            if unit[Column.ID] in Devices:
+                            if (unit[Column.ID] + self._DEVICE_OFFSET) in Devices:
                                 device = Devices[unit[Column.ID] + self._DEVICE_OFFSET]
 
                                 Domoticz.Log("Device name: \"{}\"".format(device.Name))
