@@ -393,8 +393,7 @@ class BasePlugin:
         for unit in table:
             if (unit[Column.ID] + offset) in Devices:
                 device = Devices[unit[Column.ID] + offset]
-                if (device.Name != prepend_name + unit[Column.NAME],
-                    device.Type != unit[Column.TYPE] or
+                if (device.Type != unit[Column.TYPE] or
                     device.SubType != unit[Column.SUBTYPE] or
                     device.SwitchType != unit[Column.SWITCHTYPE] or
                     device.Options != unit[Column.OPTIONS]):
@@ -405,7 +404,6 @@ class BasePlugin:
                     sValue = device.sValue
 
                     device.Update(
-                            Name=prepend_name + unit[Column.NAME],
                             Type=unit[Column.TYPE],
                             Subtype=unit[Column.SUBTYPE],
                             Switchtype=unit[Column.SWITCHTYPE],
@@ -419,6 +417,9 @@ class BasePlugin:
         if self.add_devices:
             for unit in table:
                 if (unit[Column.ID] + offset) not in Devices:
+
+                    Domoticz.Log("Adding device \"{}\"".format(prepend_name + unit[Column.NAME]))
+
                     Domoticz.Device(
                         Unit=unit[Column.ID] + offset,
                         Name=prepend_name + unit[Column.NAME],
