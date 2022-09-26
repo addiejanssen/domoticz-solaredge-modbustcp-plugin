@@ -55,6 +55,7 @@ import solaredge_modbus
 import json
 
 import inverter_tables
+import meter_tables
 
 from datetime import datetime, timedelta
 from enum import IntEnum, unique, auto
