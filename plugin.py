@@ -169,23 +169,32 @@ class BasePlugin:
 
         if self._LOOKUP_TABLE:
 
-            inverter_values = None
+#            inverter_values = None
+            meter_values = None
             try:
-                inverter_values = self.inverter.read_all()
+#                inverter_values = self.inverter.read_all()
+
+                meter1 = self.inverter.meters()['Meter1']
+                meter_values = meter1.read_all()
             except ConnectionException:
-                inverter_values = None
+#                inverter_values = None
+                meter_values = None
                 Domoticz.Debug("ConnectionException")
             else:
 
-                if inverter_values:
+#                if inverter_values:
+                if meter_values:
 
                     if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
-                        to_log = inverter_values
+#                        to_log = inverter_values
+                        to_log = meter_values
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
-                        Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
+#                        Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
+                        Domoticz.Log("meter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
 
-                    self.process(self._DEVICE_OFFSET, self._LOOKUP_TABLE, inverter_values)
+#                    self.process(self._DEVICE_OFFSET, self._LOOKUP_TABLE, inverter_values)
+                    self.process(self._DEVICE_OFFSET, self._LOOKUP_TABLE, meter_values)
                 else:
                     Domoticz.Log("Inverter returned no information")
 
@@ -303,9 +312,13 @@ class BasePlugin:
         if self.retryafter <= datetime.now():
 
             # Here we go...
-            inverter_values = None
+#            inverter_values = None
+            meter_values = None
             try:
-                inverter_values = self.inverter.read_all()
+#                inverter_values = self.inverter.read_all()
+
+                meter1 = self.inverter.meters()['Meter1']
+                meter_values = meter1.read_all()
             except ConnectionException:
 
                 # There are multiple reasons why this may fail.
@@ -316,29 +329,39 @@ class BasePlugin:
                 # Try again in the future.
 
                 self.retryafter = datetime.now() + self.retrydelay
-                inverter_values = None
+#                inverter_values = None
+                meter_values = None
 
                 Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                 Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
 
             else:
 
-                if inverter_values:
+ #               if inverter_values:
+                if meter_values:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
-                    inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                    Domoticz.Log("Inverter type: {}".format(inverter_type))
+#                    inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
+#                    Domoticz.Log("Inverter type: {}".format(inverter_type))
+                    meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
+                    Domoticz.Log("Meter type: {}".format(meter_type))
 
                     # The plugin currently has 2 supported types.
                     # This may be updated in the future based on user feedback.
 
-                    if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = inverter_tables.SINGLE_PHASE_INVERTER
-                    elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = inverter_tables.THREE_PHASE_INVERTER
+#                    if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
+#                        self._LOOKUP_TABLE = inverter_tables.SINGLE_PHASE_INVERTER
+#                    elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
+#                        self._LOOKUP_TABLE = inverter_tables.THREE_PHASE_INVERTER
+#                    else:
+#                        Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
+#                    self._DEVICE_OFFSET = 50      # for testing purposes only
+
+                    if meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                        self._LOOKUP_TABLE = meter_tables.WYE_THREE_PHASE_METER
                     else:
-                        Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
-                    self._DEVICE_OFFSET = 50      # for testing purposes only
+                        Domoticz.Log("Unsupported meter type: {}".format(meter_type))
+                    self._DEVICE_OFFSET = 150      # for testing purposes only
 
                     if self._LOOKUP_TABLE:
 
