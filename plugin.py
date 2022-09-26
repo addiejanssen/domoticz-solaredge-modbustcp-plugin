@@ -365,66 +365,69 @@ class BasePlugin:
                     self._DEVICE_OFFSET = 150      # for testing purposes only
 
                     if self._LOOKUP_TABLE:
+                        self.addUpdateDevices("Meter1 - ", self._DEVICE_OFFSET, self._LOOKUP_TABLE)
 
-                        # Set the number of samples on all the math objects.
-
-                        for unit in self._LOOKUP_TABLE:
-                            if unit[Column.MATH]  and Parameters["Mode4"] == "math_enabled":
-                                unit[Column.MATH].set_max_samples(self.max_samples)
-
-
-                        # We updated some device types over time.
-                        # Let's make sure that we have the correct type setup.
-
-                        for unit in self._LOOKUP_TABLE:
-
-                            Domoticz.Log("Updating devices if needed")
-                            if (unit[Column.ID] + self._DEVICE_OFFSET) in Devices:
-                                device = Devices[unit[Column.ID] + self._DEVICE_OFFSET]
-
-                                Domoticz.Log("Device name: \"{}\"".format(device.Name))
-
-                                if (device.Name != "Meter 1 - " + unit[Column.NAME],
-                                    device.Type != unit[Column.TYPE] or
-                                    device.SubType != unit[Column.SUBTYPE] or
-                                    device.SwitchType != unit[Column.SWITCHTYPE] or
-                                    device.Options != unit[Column.OPTIONS]):
-
-                                    Domoticz.Log("Updating device \"{}\"".format(device.Name))
-
-                                    nValue = device.nValue
-                                    sValue = device.sValue
-
-                                    device.Update(
-                                            Name="Meter 1 - " + unit[Column.NAME],
-                                            Type=unit[Column.TYPE],
-                                            Subtype=unit[Column.SUBTYPE],
-                                            Switchtype=unit[Column.SWITCHTYPE],
-                                            Options=unit[Column.OPTIONS],
-                                            nValue=nValue,
-                                            sValue=sValue
-                                    )
-
-                        # Add missing devices if needed.
-
-                        if self.add_devices:
-                            for unit in self._LOOKUP_TABLE:
-                                if (unit[Column.ID] +self._DEVICE_OFFSET) not in Devices:
-                                    Domoticz.Device(
-                                        Unit=unit[Column.ID] + self._DEVICE_OFFSET,
-                                        Name="Meter 1 - " + unit[Column.NAME],
-                                        Type=unit[Column.TYPE],
-                                        Subtype=unit[Column.SUBTYPE],
-                                        Switchtype=unit[Column.SWITCHTYPE],
-                                        Options=unit[Column.OPTIONS],
-                                        Used=1,
-                                    ).Create()
                 else:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                     Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
         else:
             Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
 
+
+    #
+    # Go through the table and update matching devices
+    # with the new values.
+    #
+    
+    def addUpdateDevices(self, prepend_name, offset, table):
+
+        # Set the number of samples on all the math objects.
+
+        for unit in table:
+            if unit[Column.MATH]  and Parameters["Mode4"] == "math_enabled":
+                unit[Column.MATH].set_max_samples(self.max_samples)
+
+        # We updated some device types over time.
+        # Let's make sure that we have the correct type setup.
+
+        for unit in table:
+            if (unit[Column.ID] + offset) in Devices:
+                device = Devices[unit[Column.ID] + offset]
+                if (device.Name != prepend_name + unit[Column.NAME],
+                    device.Type != unit[Column.TYPE] or
+                    device.SubType != unit[Column.SUBTYPE] or
+                    device.SwitchType != unit[Column.SWITCHTYPE] or
+                    device.Options != unit[Column.OPTIONS]):
+
+                    Domoticz.Log("Updating device \"{}\"".format(device.Name))
+
+                    nValue = device.nValue
+                    sValue = device.sValue
+
+                    device.Update(
+                            Name=prepend_name + unit[Column.NAME],
+                            Type=unit[Column.TYPE],
+                            Subtype=unit[Column.SUBTYPE],
+                            Switchtype=unit[Column.SWITCHTYPE],
+                            Options=unit[Column.OPTIONS],
+                            nValue=nValue,
+                            sValue=sValue
+                    )
+
+        # Add missing devices if needed.
+
+        if self.add_devices:
+            for unit in table:
+                if (unit[Column.ID] + offset) not in Devices:
+                    Domoticz.Device(
+                        Unit=unit[Column.ID] + offset,
+                        Name=prepend_name + unit[Column.NAME],
+                        Type=unit[Column.TYPE],
+                        Subtype=unit[Column.SUBTYPE],
+                        Switchtype=unit[Column.SWITCHTYPE],
+                        Options=unit[Column.OPTIONS],
+                        Used=1,
+                    ).Create()
 
 #
 # Instantiate the plugin and register the supported callbacks.
