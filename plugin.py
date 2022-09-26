@@ -377,10 +377,12 @@ class BasePlugin:
                         # Let's make sure that we have the correct type setup.
 
                         for unit in self._LOOKUP_TABLE:
+
+                            Domoticz.Log("Updating devices if needed")
                             if unit[Column.ID] in Devices:
                                 device = Devices[unit[Column.ID] + self._DEVICE_OFFSET]
 
-                                Domoticz.Log("device.Name: {}".format(device.Name))
+                                Domoticz.Log("Device name: \"{}\"".format(device.Name))
 
                                 if (device.Name != "Meter 1 - " + unit[Column.NAME],
                                     device.Type != unit[Column.TYPE] or
