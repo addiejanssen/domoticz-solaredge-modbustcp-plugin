@@ -361,10 +361,10 @@ class BasePlugin:
 
                 else:
                     if inverter_values:
-                        Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                        Domoticz.Log("Inverter returned information")
 
                         inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                        Domoticz.Log("Inverter type: {}".format(inverter_type))
+                        Domoticz.Log("Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[inverter_type]))
 
                         device_offset = 0
                         details = {
