@@ -386,8 +386,8 @@ class BasePlugin:
                         # Let's see if there are any meters attached
 
                         device_offset = max(inverters.InverterUnit)
-                        meters = self.inverter.meters()
-                        for meter, params in meters.items():
+                        all_meters = self.inverter.meters()
+                        for meter, params in all_meters.items():
                             meter_values = params.read_all()
 
                             details = {
@@ -412,8 +412,8 @@ class BasePlugin:
                         # And then look for batteries
 
                         device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
-                        batteries = self.inverter.batteries()
-                        for battery, params in batteries.items():
+                        all_batteries = self.inverter.batteries()
+                        for battery, params in all_batteries.items():
                             battery_values = params.read_all()
 
                             details = {
