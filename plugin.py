@@ -364,7 +364,7 @@ class BasePlugin:
                         Domoticz.Log("Inverter returned information")
 
                         inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                        Domoticz.Log("Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[inverter_values["c_sunspec_did"]]))
+                        Domoticz.Log("Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
 
                         device_offset = 0
                         details = {
