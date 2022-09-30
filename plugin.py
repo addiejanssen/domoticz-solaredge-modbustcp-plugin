@@ -397,7 +397,7 @@ class BasePlugin:
                             }
                             device_offset = device_offset + max(meters.MeterUnit)
 
-                            meter_type = meter_values["c_sunspec_did"]
+                            meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
                             Domoticz.Log("Meter type: {}".format(meter_type))
 
                             if meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
@@ -423,7 +423,7 @@ class BasePlugin:
                             }
                             device_offset = device_offset + max(batteries.BatteryUnit)
 
-                            battery_type = battery_values["c_sunspec_did"]
+                            battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
                             Domoticz.Log("Battery type: {}".format(battery_type))
 
                             Domoticz.Log("Unsupported battery type: {}".format(battery_type))
