@@ -175,29 +175,28 @@ class BasePlugin:
 
                     values = None
 
-                    match device_details["type"]:
-                        case "inverter":
-                            try:
-                                values = self.inverter.read_all()
-                            except ConnectionException:
-                                values = None
-                                Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    if device_details["type"] == "inverter":
+                        try:
+                            values = self.inverter.read_all()
+                        except ConnectionException:
+                            values = None
+                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
-                        case "meter":
-                            try:
-                                meter = self.inverter.meters()[device_name]
-                                values = meter.read_all()
-                            except ConnectionException:
-                                values = None
-                                Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    elif device_details["type"] == "meter":
+                        try:
+                            meter = self.inverter.meters()[device_name]
+                            values = meter.read_all()
+                        except ConnectionException:
+                            values = None
+                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
-                        case "battery":
-                            try:
-                                battery = self.inverter.batteries()[device_name]
-                                values = battery.read_all()
-                            except ConnectionException:
-                                values = None
-                                Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    elif device_details["type"] == "battery":
+                        try:
+                            battery = self.inverter.batteries()[device_name]
+                            values = battery.read_all()
+                        except ConnectionException:
+                            values = None
+                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                     if values:
                         if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
@@ -374,13 +373,12 @@ class BasePlugin:
                             "table": None
                         }
 
-                        match inverter_type:
-                            case solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
-                                details.update({"table": inverters.SINGLE_PHASE_INVERTER})
-                            case solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
-                                details.update({"table": inverters.THREE_PHASE_INVERTER})
-                            case _ :
-                                Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
+                        if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
+                            details.update({"table": inverters.SINGLE_PHASE_INVERTER})
+                        if inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
+                            details.update({"table": inverters.THREE_PHASE_INVERTER})
+                        else:
+                            Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
 
                         self.device_dictionary["Inverter"] = details
                         self.addUpdateDevices("Inverter")
@@ -402,11 +400,10 @@ class BasePlugin:
                             meter_type = meter_values["c_sunspec_did"]
                             Domoticz.Log("Meter type: {}".format(meter_type))
 
-                            match meter_type:
-                                case solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
-                                    details.update({"table": meters.WYE_THREE_PHASE_METER})
-                                case _ :
-                                    Domoticz.Log("Unsupported meter type: {}".format(meter_type))
+                            if meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                                details.update({"table": meters.WYE_THREE_PHASE_METER})
+                            else:
+                                Domoticz.Log("Unsupported meter type: {}".format(meter_type))
 
                             self.device_dictionary[meter] = details
                             self.addUpdateDevices(meter)
