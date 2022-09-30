@@ -375,7 +375,7 @@ class BasePlugin:
 
                         if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
                             details.update({"table": inverters.SINGLE_PHASE_INVERTER})
-                        if inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
+                        elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
                             details.update({"table": inverters.THREE_PHASE_INVERTER})
                         else:
                             Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
@@ -398,7 +398,7 @@ class BasePlugin:
                             device_offset = device_offset + max(meters.MeterUnit)
 
                             meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
-                            Domoticz.Log("Meter type: {}".format(meter_type))
+                            Domoticz.Log("Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
 
                             if meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
                                 details.update({"table": meters.WYE_THREE_PHASE_METER})
@@ -424,12 +424,12 @@ class BasePlugin:
                             device_offset = device_offset + max(batteries.BatteryUnit)
 
                             battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-                            Domoticz.Log("Battery type: {}".format(battery_type))
+                            Domoticz.Log("Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
 
                             Domoticz.Log("Unsupported battery type: {}".format(battery_type))
 
-                            self.device_dictionary[battery] = details
-                            self.addUpdateDevices(battery)
+#                            self.device_dictionary[battery] = details
+#                            self.addUpdateDevices(battery)
 
                     else:
                         self.inverter.disconnect()
