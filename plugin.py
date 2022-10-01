@@ -51,6 +51,7 @@
 """
 
 from contextlib import nullcontext
+from pickle import APPEND
 import Domoticz
 import solaredge_modbus
 import json
@@ -81,8 +82,9 @@ class Column(IntEnum):
     MODBUSSCALE     = 7
     FORMAT          = 8
     PREPEND         = 9
-    LOOKUP          = 10
-    MATH            = 11
+    APPEND          = 10
+    LOOKUP          = 11
+    MATH            = 12
 
 #
 # The BasePlugin is the actual Domoticz plugin.
