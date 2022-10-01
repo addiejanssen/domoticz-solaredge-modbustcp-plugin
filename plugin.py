@@ -41,10 +41,10 @@
         </param>
         <param field="Mode5" label="Log level" width="100px">
             <options>
-                <option label="Normal" value="NORMAL" default="true" />
-                <option label="Verbose" value="VERBOSE"/>
-                <option label="Verbose+" value="EXTRA"/>
-                <option label="Verbose++" value="ALL"/>
+                <option label="Normal" value="1" default="true" />
+                <option label="Verbose" value="2"/>
+                <option label="Verbose+" value="3"/>
+                <option label="Verbose++" value="4"/>
             </options>
         </param>
     </params>
@@ -141,9 +141,8 @@ class BasePlugin:
 
         # Set the logging level
 
-        Domoticz.Log("mode 5 = {}".format(Parameters["Mode5"]))
-
-        SetLogLevel(LogLevels(Parameters["Mode5"]))
+        Domoticz.Log("mode 5 = {}".format(int(Parameters["Mode5"])))
+        SetLogLevel(LogLevels(int(Parameters["Mode5"])))
 
         # Let's go
 
