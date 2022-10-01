@@ -141,10 +141,12 @@ class BasePlugin:
 
         # Set the logging level
 
+        Domoticz.Log("mode 5 = {}".format(Parameters["Mode5"]))
+
         SetLogLevel(LogLevels(Parameters["Mode5"]))
 
         # Let's go
-        
+
         DomoLog(LogLevels.ALL, 
             "onStart Address: {} Port: {} Device Address: {}".format(
                 Parameters["Address"],
