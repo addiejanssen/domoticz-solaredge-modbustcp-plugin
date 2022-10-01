@@ -9,6 +9,7 @@ class Delta:
     def update(self, new_value, scale = 0):
         value = new_value * (10 ** scale)
         self.delta = value - self.prev_value
+        Domoticz.Debug("Delta: {} - {} = {}".format(value, self.prev_value, self.delta))
         self.prev_value = value
 
     def get(self):
