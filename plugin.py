@@ -128,7 +128,10 @@ class BasePlugin:
 
     def onStart(self):
 
-        self.add_devices = bool(Parameters["Mode1"])
+        if Parameters["Mode1"] == "Yes":
+            self.add_devices = True
+        else:
+            self.add_devices = False
 
         # Domoticz will generate graphs showing an interval of 5 minutes.
         # Calculate the number of samples to store over a period of 5 minutes.
