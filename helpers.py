@@ -1,11 +1,6 @@
-from concurrent.futures.process import EXTRA_QUEUED_CALLS
-from re import VERBOSE
-from tkinter import ALL
-from tkinter.font import NORMAL
 import Domoticz
 
 from enum import IntEnum, unique
-
 
 #
 # Logging
