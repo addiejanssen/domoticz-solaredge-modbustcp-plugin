@@ -3,8 +3,8 @@ import Domoticz
 class Delta:
 
     def __init__(self):
-        self.prev_value
-        self.delta
+        self.prev_value = 0
+        self.delta = 0
 
     def update(self, new_value, scale = 0):
         value = new_value * (10 ** scale)
