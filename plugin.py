@@ -141,7 +141,7 @@ class BasePlugin:
 
         # Set the logging level
 
-        Domoticz.Log("mode 5 = {}".format(Parameters["Mode5"]))
+        Domoticz.Log("mode 5 = {}".format(Parameters["Mode5"].value))
 
         SetLogLevel(LogLevels(Parameters["Mode5"]))
 
