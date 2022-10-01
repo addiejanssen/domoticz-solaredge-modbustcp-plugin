@@ -41,10 +41,10 @@
         </param>
         <param field="Mode5" label="Log level" width="100px">
             <options>
-                <option label="Normal" value="1" default="true" />
-                <option label="Verbose" value="2"/>
-                <option label="Verbose+" value="3"/>
-                <option label="Verbose++" value="4"/>
+                <option label="Normal" value="0" default="true" />
+                <option label="Verbose" value="1"/>
+                <option label="Verbose+" value="2"/>
+                <option label="Verbose++" value="3"/>
             </options>
         </param>
     </params>
@@ -132,20 +132,15 @@ class BasePlugin:
 
         # Domoticz will generate graphs showing an interval of 5 minutes.
         # Calculate the number of samples to store over a period of 5 minutes.
-
         self.max_samples = 300 / int(Parameters["Mode2"])
 
         # Now set the interval at which the information is collected accordingly.
-
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
         # Set the logging level
-
-        Domoticz.Log("mode 5 = {}".format(int(Parameters["Mode5"])))
         SetLogLevel(LogLevels(int(Parameters["Mode5"])))
 
         # Let's go
-
         DomoLog(LogLevels.ALL, 
             "onStart Address: {} Port: {} Device Address: {}".format(
                 Parameters["Address"],
