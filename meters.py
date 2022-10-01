@@ -68,10 +68,6 @@ class MeterUnit(IntEnum):
     L2_EXPORT_ENERGY_REACTIVE_Q4    = 60
     L3_EXPORT_ENERGY_REACTIVE_Q4    = 61
 
-#
-# This table represents a WYE three phase meter.
-#
-
 WYE_THREE_PHASE_METER = [
 #   ID,                                 NAME,                               TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,                MODBUSSCALE,            FORMAT,    PREPEND,             LOOKUP, MATH
     [MeterUnit.CURRENT,                 "Current",                          0xF3,  0x17,     0x00,       {},                     "current",                 "current_scale",        "{:.2f}",  None,                None,   Average() ],
@@ -111,14 +107,14 @@ WYE_THREE_PHASE_METER = [
 # is there/what is the relation with the POWER values?
 # perhaps this should become a regulare counter type of meter?
 #
-    [MeterUnit.EXPORT_ENERGY_ACTIVE,    "Total Exported Energy (Active)",   0xF3,  0x1D,     0x04,       {},                     "export_energy_active",    "energy_active_scale",   "{};0",   None,                None,   None      ],
+    [MeterUnit.EXPORT_ENERGY_ACTIVE,    "Total Exported Energy (Active)",   0xF3,  0x1D,     0x04,       {},                     "export_energy_active",    "energy_active_scale",   "0;{}",   None,                None,   None      ],
     [MeterUnit.L1_EXPORT_ENERGY_ACTIVE, "L1 Exported Energy (Active)",      0xF3,  0x1D,     0x04,       {},                     "l1_export_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ],
     [MeterUnit.L2_EXPORT_ENERGY_ACTIVE, "L2 Exported Energy (Active)",      0xF3,  0x1D,     0x04,       {},                     "l2_export_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ],
     [MeterUnit.L3_EXPORT_ENERGY_ACTIVE, "L3 Exported Energy (Active)",      0xF3,  0x1D,     0x04,       {},                     "l3_export_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ],
-    [MeterUnit.IMPORT_ENERGY_ACTIVE,    "Total Imported Energy (Active)",   0xF3,  0x21,     0x00,       {},                     "import_energy_active",    "energy_active_scale",   "{};0",   None,                None,   None      ],
-    [MeterUnit.L1_IMPORT_ENERGY_ACTIVE, "L1 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l1_import_energy_active", "energy_active_scale",   "{};0",   None,                None,   None      ],
-    [MeterUnit.L2_IMPORT_ENERGY_ACTIVE, "L2 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l2_import_energy_active", "energy_active_scale",   "{};0",   None,                None,   None      ],
-    [MeterUnit.L3_IMPORT_ENERGY_ACTIVE, "L3 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l3_import_energy_active", "energy_active_scale",   "{};0",   None,                None,   None      ]
+    [MeterUnit.IMPORT_ENERGY_ACTIVE,    "Total Imported Energy (Active)",   0xF3,  0x21,     0x00,       {},                     "import_energy_active",    "energy_active_scale",   "0;{}",   None,                None,   None      ],
+    [MeterUnit.L1_IMPORT_ENERGY_ACTIVE, "L1 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l1_import_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ],
+    [MeterUnit.L2_IMPORT_ENERGY_ACTIVE, "L2 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l2_import_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ],
+    [MeterUnit.L3_IMPORT_ENERGY_ACTIVE, "L3 Imported Energy (Active)",      0xF3,  0x21,     0x00,       {},                     "l3_import_energy_active", "energy_active_scale",   "0;{}",   None,                None,   None      ]
 
 
 

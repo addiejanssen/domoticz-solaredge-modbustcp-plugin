@@ -378,6 +378,7 @@ class BasePlugin:
                         elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
                             details.update({"table": inverters.THREE_PHASE_INVERTER})
                         else:
+                            details.update({"table": inverters.OTHER_INVERTER})
                             Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
 
                         self.device_dictionary["Inverter"] = details
