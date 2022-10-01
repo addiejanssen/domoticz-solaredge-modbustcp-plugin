@@ -300,7 +300,7 @@ class BasePlugin:
                         else:
                             m.update(values[unit[Column.MODBUSNAME]])
                         append_value = m.get()
-                        sValue = unit[Column.FORMAT].format(value, append_value)
+                        sValue = unit[Column.FORMAT].format(append_value, value)
                     else:
                         Domoticz.Debug("-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
