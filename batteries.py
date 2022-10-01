@@ -1,9 +1,4 @@
-from curses.ascii import SOH
-from socket import SO_ERROR
-import solaredge_modbus
-
-from calculators import Average, Maximum
-from enum import IntEnum, unique, auto
+from enum import IntEnum, unique
 
 @unique
 class BatteryUnit(IntEnum):
@@ -28,3 +23,9 @@ class BatteryUnit(IntEnum):
     AVAILABLE_ENERGY            = 18
     SOH                         = 19
     SOE                         = 20
+
+#
+# Ready to start supporting batteries....
+# However, we need actual data in order to define the tables.
+# Let's wait for the community to respond.
+#

@@ -41,15 +41,17 @@
         </param>
         <param field="Mode5" label="Log level" width="100px">
             <options>
-                <option label="Normal" value="Normal" default="true" />
-                <option label="Extra" value="Extra"/>
-                <option label="Debug" value="Debug"/>
+                <option label="Normal" value="1" default="true" />
+                <option label="Verbose" value="2"/>
+                <option label="Verbose+" value="3"/>
+                <option label="Verbose++" value="4"/>
             </options>
         </param>
     </params>
 </plugin>
 """
 
+from inspect import Parameter
 import Domoticz
 import solaredge_modbus
 import json
@@ -58,8 +60,9 @@ import inverters
 import meters
 import batteries
 
+from helpers import DomoLog, LogLevels, SetLogLevel
 from datetime import datetime, timedelta
-from enum import IntEnum, unique, auto
+from enum import IntEnum, unique
 from pymodbus.exceptions import ConnectionException
 
 #
@@ -79,10 +82,11 @@ class Column(IntEnum):
     MODBUSNAME      = 6
     MODBUSSCALE     = 7
     FORMAT          = 8
-    PREPEND         = 9
-    APPEND          = 10
+    PREPEND_LOOKUP  = 9
+    PREPEND_MATH    = 10
     LOOKUP          = 11
     MATH            = 12
+
 
 #
 # The BasePlugin is the actual Domoticz plugin.
@@ -135,12 +139,13 @@ class BasePlugin:
 
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
-        if Parameters["Mode5"] == "Debug":
-            Domoticz.Debugging(1)
-        else:
-            Domoticz.Debugging(0)
+        # Set the logging level
 
-        Domoticz.Debug(
+        SetLogLevel(LogLevels(Parameters["Mode5"]))
+
+        # Let's go
+        
+        DomoLog(LogLevels.ALL, 
             "onStart Address: {} Port: {} Device Address: {}".format(
                 Parameters["Address"],
                 Parameters["Port"],
@@ -165,7 +170,7 @@ class BasePlugin:
     #
 
     def onHeartbeat(self):
-        Domoticz.Debug("onHeartbeat")
+        DomoLog(LogLevels.ALL, "onHeartbeat")
 
         if self.inverter.connected():
 
@@ -180,7 +185,7 @@ class BasePlugin:
                             values = self.inverter.read_all()
                         except ConnectionException:
                             values = None
-                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                     elif device_details["type"] == "meter":
                         try:
@@ -188,7 +193,7 @@ class BasePlugin:
                             values = meter.read_all()
                         except ConnectionException:
                             values = None
-                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                     elif device_details["type"] == "battery":
                         try:
@@ -196,30 +201,26 @@ class BasePlugin:
                             values = battery.read_all()
                         except ConnectionException:
                             values = None
-                            Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                     if values:
-                        if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
-                            to_log = values
-                            if "c_serialnumber" in to_log:
-                                to_log.pop("c_serialnumber")
-                            Domoticz.Log("device: {} values: {}".format(device_name, json.dumps(to_log, indent=4, sort_keys=False)))
+
+                        to_log = values
+                        if "c_serialnumber" in to_log:
+                            to_log.pop("c_serialnumber")
+                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(device_name, json.dumps(to_log, indent=4, sort_keys=False)))
 
                         self.processValues(device_details, values)
                     else:
-                        Domoticz.Log("Inverter returned no information")
+                        DomoLog(LogLevels.NORMAL, "Inverter returned no information")
 
         else:
             self.connectToInverter()
-
-
 
     #
     # Go through the table and update matching devices
     # with the new values.
     #
-    
-#    def process(self, offset, table, values):
 
     def processValues(self, device_details, values):
 
@@ -235,17 +236,17 @@ class BasePlugin:
             # Now process each unit in the table.
 
             for unit in table:
-                Domoticz.Debug(str(unit))
+                DomoLog(LogLevels.ALL, str(unit))
 
                 # Skip a unit when the matching device got deleted.
 
                 if (unit[Column.ID] + offset) in Devices:
-                    Domoticz.Debug("-> found in Devices")
+                    DomoLog(LogLevels.ALL, "-> found in Devices")
 
                     # For certain units the table has a lookup table to replace the value with something else.
 
                     if unit[Column.LOOKUP]:
-                        Domoticz.Debug("-> looking up...")
+                        DomoLog(LogLevels.ALL, "-> looking up...")
 
                         lookup_table = unit[Column.LOOKUP]
                         to_lookup = int(values[unit[Column.MODBUSNAME]])
@@ -258,7 +259,7 @@ class BasePlugin:
                     # When a math object is setup for the unit, update the samples in it and get the calculated value.
 
                     elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
-                        Domoticz.Debug("-> calculating...")
+                        DomoLog(LogLevels.ALL, "-> calculating...")
                         m = unit[Column.MATH]
                         if unit[Column.MODBUSSCALE]:
                             m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
@@ -271,41 +272,41 @@ class BasePlugin:
                     # Some values from the inverter need to be scaled before they can be stored.
 
                     elif unit[Column.MODBUSSCALE]:
-                        Domoticz.Debug("-> scaling...")
+                        DomoLog(LogLevels.ALL, "-> scaling...")
                         # we need to do some calculation here
                         value = values[unit[Column.MODBUSNAME]] * (10 ** values[unit[Column.MODBUSSCALE]])
 
                     # Some values require no action but storing in Domoticz.
 
                     else:
-                        Domoticz.Debug("-> copying...")
+                        DomoLog(LogLevels.ALL, "-> copying...")
                         value = values[unit[Column.MODBUSNAME]]
 
-                    Domoticz.Debug("value = {}".format(value))
+                    DomoLog(LogLevels.ALL, "value = {}".format(value))
 
                     # Time to store the value in Domoticz.
                     # Some devices require multiple values, in which case the plugin will combine those values.
                     # Currently, there is only a need to prepend one value with another.
 
-                    if unit[Column.PREPEND]:
-                        Domoticz.Debug("-> has prepend")
-                        prepend = Devices[unit[Column.PREPEND] + offset].sValue
-                        Domoticz.Debug("prepend = {}".format(prepend))
+                    if unit[Column.PREPEND_LOOKUP]:
+                        DomoLog(LogLevels.ALL, "-> has prepend lookup")
+                        prepend = Devices[unit[Column.PREPEND_LOOKUP] + offset].sValue
+                        DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
                         sValue = unit[Column.FORMAT].format(prepend, value)
-                    elif unit[Column.APPEND]:
-                        Domoticz.Debug("-> has append")
-                        m = unit[Column.APPEND]
+                    elif unit[Column.PREPEND_MATH]:
+                        DomoLog(LogLevels.ALL, "-> has prepend math")
+                        m = unit[Column.PREPEND_MATH]
                         if unit[Column.MODBUSSCALE]:
                             m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
                         else:
                             m.update(values[unit[Column.MODBUSNAME]])
-                        append_value = m.get()
-                        sValue = unit[Column.FORMAT].format(append_value, value)
+                        prepend = m.get()
+                        sValue = unit[Column.FORMAT].format(prepend, value)
                     else:
-                        Domoticz.Debug("-> no prepend")
+                        DomoLog(LogLevels.ALL, "-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
 
-                    Domoticz.Debug("sValue = {}".format(sValue))
+                    DomoLog(LogLevels.ALL, "sValue = {}".format(sValue))
 
                     # Only store the value in Domoticz when it has changed.
                     # TODO:
@@ -319,9 +320,9 @@ class BasePlugin:
                     device_count += 1
 
                 else:
-                    Domoticz.Debug("-> NOT found in Devices")
+                    DomoLog(LogLevels.ALL, "-> NOT found in Devices")
 
-            Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
+            DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
             
     #
     # Connect to the inverter and initialize the lookup tables.
@@ -348,11 +349,11 @@ class BasePlugin:
                 self.inverter.disconnect()
                 self.retryafter = datetime.now() + self.retrydelay
 
-                Domoticz.Log("Connection Exception when trying to connect to: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
-                Domoticz.Log("Retrying to connect to inverter after: {}".format(self.retryafter))
+                DomoLog(LogLevels.NORMAL, "Connection Exception when trying to connect to: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                DomoLog(LogLevels.NORMAL, "Retrying to connect to inverter after: {}".format(self.retryafter))
 
             else:
-                Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
 
                 # Let's get some values from the inverter and
                 # figure out the type of the inverter and
@@ -365,15 +366,15 @@ class BasePlugin:
                     self.inverter.disconnect()
                     self.retryafter = datetime.now() + self.retrydelay
 
-                    Domoticz.Log("Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
-                    Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                    DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
                 else:
                     if inverter_values:
-                        Domoticz.Log("Inverter returned information")
+                        DomoLog(LogLevels.NORMAL, "Inverter returned information")
 
                         inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                        Domoticz.Log("Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
+                        DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
 
                         device_offset = 0
                         details = {
@@ -388,7 +389,7 @@ class BasePlugin:
                             details.update({"table": inverters.THREE_PHASE_INVERTER})
                         else:
                             details.update({"table": inverters.OTHER_INVERTER})
-                            Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
+                            DomoLog(LogLevels.NORMAL, "Unsupported inverter type: {}".format(inverter_type))
 
                         self.device_dictionary["Inverter"] = details
                         self.addUpdateDevices("Inverter")
@@ -408,12 +409,15 @@ class BasePlugin:
                             device_offset = device_offset + max(meters.MeterUnit)
 
                             meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
-                            Domoticz.Log("Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                            DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
 
-                            if meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                            if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
+                                details.update({"table": meters.SINGLE_PHASE_METER})
+                            elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
                                 details.update({"table": meters.WYE_THREE_PHASE_METER})
                             else:
-                                Domoticz.Log("Unsupported meter type: {}".format(meter_type))
+                                details.update({"table": meters.OTHER_METER})
+                                DomoLog(LogLevels.NORMAL, "Unsupported meter type: {}".format(meter_type))
 
                             self.device_dictionary[meter] = details
                             self.addUpdateDevices(meter)
@@ -434,9 +438,9 @@ class BasePlugin:
                             device_offset = device_offset + max(batteries.BatteryUnit)
 
                             battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-                            Domoticz.Log("Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+                            DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
 
-                            Domoticz.Log("Unsupported battery type: {}".format(battery_type))
+                            DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
 
 #                            self.device_dictionary[battery] = details
 #                            self.addUpdateDevices(battery)
@@ -445,10 +449,10 @@ class BasePlugin:
                         self.inverter.disconnect()
                         self.retryafter = datetime.now() + self.retrydelay
 
-                        Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
-                        Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                        DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                        DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
         else:
-            Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+            DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
     #
     # Go through the table and update matching devices
@@ -480,7 +484,7 @@ class BasePlugin:
                         device.SwitchType != unit[Column.SWITCHTYPE] or
                         device.Options != unit[Column.OPTIONS]):
 
-                        Domoticz.Log("Updating device \"{}\"".format(device.Name))
+                        DomoLog(LogLevels.NORMAL, "Updating device \"{}\"".format(device.Name))
 
                         nValue = device.nValue
                         sValue = device.sValue
@@ -500,7 +504,7 @@ class BasePlugin:
                 for unit in table:
                     if (unit[Column.ID] + offset) not in Devices:
 
-                        Domoticz.Log("Adding device \"{}\"".format(prepend_name + unit[Column.NAME]))
+                        DomoLog(LogLevels.NORMAL, "Adding device \"{}\"".format(prepend_name + unit[Column.NAME]))
 
                         Domoticz.Device(
                             Unit=unit[Column.ID] + offset,

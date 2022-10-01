@@ -1,4 +1,39 @@
+from concurrent.futures.process import EXTRA_QUEUED_CALLS
+from re import VERBOSE
+from tkinter import ALL
+from tkinter.font import NORMAL
 import Domoticz
+
+from enum import IntEnum, unique
+
+
+#
+# Logging
+#
+
+@unique
+class LogLevels(IntEnum):
+
+    NORMAL      = 0
+    VERBOSE     = 1
+    EXTRA       = 2
+    ALL         = 3
+
+CurrentLogLevel = LogLevels.NORMAL
+
+def SetLogLevel(level):
+    global CurrentLogLevel
+    CurrentLogLevel = level
+
+def DomoLog(level, message):
+    if (CurrentLogLevel >= level):
+        Domoticz.Log(message)
+
+#
+# The kWh device expects 2 values, but we don't always have them.
+# The Delta class calculates a delta between 2 values and
+# that is used to satisfy the kWh device.
+#
 
 class Delta:
 
@@ -9,7 +44,7 @@ class Delta:
     def update(self, new_value, scale = 0):
         value = new_value * (10 ** scale)
         self.delta = value - self.prev_value
-        Domoticz.Debug("Delta: {} - {} = {}".format(value, self.prev_value, self.delta))
+        DomoLog(LogLevels.ALL, "Delta: {} - {} = {}".format(value, self.prev_value, self.delta))
         self.prev_value = value
 
     def get(self):
@@ -40,7 +75,7 @@ class Average:
         while (len(self.samples) > self.max_samples):
             del self.samples[0]
 
-        Domoticz.Debug("Average: {} - {} values".format(self.get(), len(self.samples)))
+        DomoLog(LogLevels.ALL, "Average: {} - {} values".format(self.get(), len(self.samples)))
 
     def get(self):
         return sum(self.samples) / len(self.samples)
@@ -69,7 +104,7 @@ class Maximum:
         while (len(self.samples) > self.max_samples):
             del self.samples[0]
 
-        Domoticz.Debug("Maximum: {} - {} values".format(self.get(), len(self.samples)))
+        DomoLog(LogLevels.ALL, "Maximum: {} - {} values".format(self.get(), len(self.samples)))
 
     def get(self):
         return max(self.samples)
