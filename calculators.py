@@ -1,5 +1,20 @@
 import Domoticz
 
+class Delta:
+
+    def __init__(self):
+        self.prev_value
+        self.delta
+
+    def update(self, new_value, scale = 0):
+        value = new_value * (10 ** scale)
+        self.delta = value - self.prev_value
+        self.prev_value = value
+
+    def get(self):
+        return self.delta
+
+
 #
 # Domoticz shows graphs with intervals of 5 minutes.
 # When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.

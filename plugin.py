@@ -50,8 +50,6 @@
 </plugin>
 """
 
-from contextlib import nullcontext
-from pickle import APPEND
 import Domoticz
 import solaredge_modbus
 import json
@@ -296,15 +294,13 @@ class BasePlugin:
                         sValue = unit[Column.FORMAT].format(prepend, value)
                     elif unit[Column.APPEND]:
                         Domoticz.Debug("-> has append")
-                        if unit[Column.APPEND] == "DELTA":
-                            try:
-                                old_parts = Devices[unit[Column.ID] + offset].sValue.split(";")
-                                old_value = int(old_parts[0])
-                                delta = value - old_value
-                            except:
-                                Domoticz.Debug("EXCEPTION")
-                                delta = 0
-                            sValue = unit[Column.FORMAT].format(value, delta)
+                        m = unit[Column.APPEND]
+                        if unit[Column.MODBUSSCALE]:
+                            m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
+                        else:
+                            m.update(values[unit[Column.MODBUSNAME]])
+                        append_value = m.get()
+                        sValue = unit[Column.FORMAT].format(value, append_value)
                     else:
                         Domoticz.Debug("-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
