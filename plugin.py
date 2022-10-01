@@ -294,6 +294,17 @@ class BasePlugin:
                         prepend = Devices[unit[Column.PREPEND] + offset].sValue
                         Domoticz.Debug("prepend = {}".format(prepend))
                         sValue = unit[Column.FORMAT].format(prepend, value)
+                    elif unit[Column.APPEND]:
+                        Domoticz.Debug("-> has append")
+                        if unit[Column.APPEND] == "DELTA":
+                            try:
+                                old_parts = Devices[unit[Column.ID] + offset].sValue.split(";")
+                                old_value = int(old_parts[0])
+                                delta = value - old_value
+                            except:
+                                Domoticz.Debug("EXCEPTION")
+                                delta = 0
+                            sValue = unit[Column.FORMAT].format(value, delta)
                     else:
                         Domoticz.Debug("-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
