@@ -264,7 +264,7 @@ class BasePlugin:
             # Now process each unit in the table.
 
             for unit in table:
-                DomoLog(LogLevels.ALL, str(unit))
+                DomoLog(LogLevels.EXTRA, str(unit))
 
                 # Skip a unit when the matching device got deleted.
 
@@ -309,7 +309,7 @@ class BasePlugin:
                     device_count += 1
 
                 else:
-                    DomoLog(LogLevels.ALL, "-> NOT found in Devices")
+                    DomoLog(LogLevels.EXTRA, "-> Skipping not found in Devices")
 
             DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
 
