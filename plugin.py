@@ -82,7 +82,7 @@ class Column(IntEnum):
     MODBUSNAME      = 6
     MODBUSSCALE     = 7
     FORMAT          = 8
-    PREPEND_LOOKUP  = 9
+    PREPEND_ROW     = 9
     PREPEND_MATH    = 10
     LOOKUP          = 11
     MATH            = 12
@@ -221,7 +221,7 @@ class BasePlugin:
     # with the new values.
     #
 
-    def processValues(self, device_details, values):
+    def processValues(self, device_details, inverter_data):
 
         if device_details["table"]:
             table = device_details["table"]
@@ -242,64 +242,25 @@ class BasePlugin:
                 if (unit[Column.ID] + offset) in Devices:
                     DomoLog(LogLevels.ALL, "-> found in Devices")
 
-                    # For certain units the table has a lookup table to replace the value with something else.
-
-                    if unit[Column.LOOKUP]:
-                        DomoLog(LogLevels.ALL, "-> looking up...")
-
-                        lookup_table = unit[Column.LOOKUP]
-                        to_lookup = int(values[unit[Column.MODBUSNAME]])
-
-                        if to_lookup >= 0 and to_lookup < len(lookup_table):
-                            value = lookup_table[to_lookup]
-                        else:
-                            value = "Key not found in lookup table: {}".format(to_lookup)
-
-                    # When a math object is setup for the unit, update the samples in it and get the calculated value.
-
-                    elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
-                        DomoLog(LogLevels.ALL, "-> calculating...")
-                        m = unit[Column.MATH]
-                        if unit[Column.MODBUSSCALE]:
-                            m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
-                        else:
-                            m.update(values[unit[Column.MODBUSNAME]])
-
-                        value = m.get()
-
-                    # When there is no math object then just store the latest value.
-                    # Some values from the inverter need to be scaled before they can be stored.
-
-                    elif unit[Column.MODBUSSCALE]:
-                        DomoLog(LogLevels.ALL, "-> scaling...")
-                        # we need to do some calculation here
-                        value = values[unit[Column.MODBUSNAME]] * (10 ** values[unit[Column.MODBUSSCALE]])
-
-                    # Some values require no action but storing in Domoticz.
-
-                    else:
-                        DomoLog(LogLevels.ALL, "-> copying...")
-                        value = values[unit[Column.MODBUSNAME]]
-
-                    DomoLog(LogLevels.ALL, "value = {}".format(value))
+                    # Get the value for this unit from the Inverter data
+                    value = self.getUnitValue(unit, inverter_data)
 
                     # Time to store the value in Domoticz.
                     # Some devices require multiple values, in which case the plugin will combine those values.
                     # Currently, there is only a need to prepend one value with another.
 
-                    if unit[Column.PREPEND_LOOKUP]:
-                        DomoLog(LogLevels.ALL, "-> has prepend lookup")
-                        prepend = Devices[unit[Column.PREPEND_LOOKUP] + offset].sValue
+                    prepend = None
+                    if unit[Column.PREPEND_ROW]:
+                        DomoLog(LogLevels.ALL, "-> has prepend lookup row")
+                        prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
                         DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
-                        sValue = unit[Column.FORMAT].format(prepend, value)
-                    elif unit[Column.PREPEND_MATH]:
-                        DomoLog(LogLevels.ALL, "-> has prepend math")
-                        m = unit[Column.PREPEND_MATH]
-                        if unit[Column.MODBUSSCALE]:
-                            m.update(values[unit[Column.MODBUSNAME]], values[unit[Column.MODBUSSCALE]])
-                        else:
-                            m.update(values[unit[Column.MODBUSNAME]])
-                        prepend = m.get()
+
+                        if unit[Column.PREPEND_MATH]:
+                            DomoLog(LogLevels.ALL, "-> has prepend math")
+                            m = unit[Column.PREPEND_MATH]
+                            prepend = m.get(prepend)
+                            DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
+
                         sValue = unit[Column.FORMAT].format(prepend, value)
                     else:
                         DomoLog(LogLevels.ALL, "-> no prepend")
@@ -323,6 +284,48 @@ class BasePlugin:
 
             DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
             
+    def getUnitValue(self, row, inverter_data):
+
+        # For certain units the table has a lookup table to replace the value with something else.
+        if row[Column.LOOKUP]:
+            DomoLog(LogLevels.ALL, "-> looking up...")
+
+            lookup_table = row[Column.LOOKUP]
+            to_lookup = int(inverter_data[row[Column.MODBUSNAME]])
+
+            if to_lookup >= 0 and to_lookup < len(lookup_table):
+                value = lookup_table[to_lookup]
+            else:
+                value = "Key not found in lookup table: {}".format(to_lookup)
+
+        # When a math object is setup for the unit, update the samples in it and get the calculated value.
+        elif row[Column.MATH] and Parameters["Mode4"] == "math_enabled":
+            DomoLog(LogLevels.ALL, "-> calculating...")
+            m = row[Column.MATH]
+            if row[Column.MODBUSSCALE]:
+                m.update(inverter_data[row[Column.MODBUSNAME]], inverter_data[row[Column.MODBUSSCALE]])
+            else:
+                m.update(inverter_data[row[Column.MODBUSNAME]])
+
+            value = m.get()
+
+        # When there is no math object then just store the latest value.
+        # Some date from the inverter need to be scaled before they can be stored.
+        elif row[Column.MODBUSSCALE]:
+            DomoLog(LogLevels.ALL, "-> scaling...")
+            # we need to do some calculation here
+            value = inverter_data[row[Column.MODBUSNAME]] * (10 ** inverter_data[row[Column.MODBUSSCALE]])
+
+        # Some data require no action but storing in Domoticz.
+        else:
+            DomoLog(LogLevels.ALL, "-> copying...")
+            value = inverter_data[row[Column.MODBUSNAME]]
+
+        DomoLog(LogLevels.ALL, "value = {}".format(value))
+
+        return value
+
+
     #
     # Connect to the inverter and initialize the lookup tables.
     #

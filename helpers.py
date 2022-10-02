@@ -24,6 +24,19 @@ def DomoLog(level, message):
     if (CurrentLogLevel >= level):
         Domoticz.Log(message)
 
+
+class Above:
+    def __init__(self, multiplier, base):
+        self.multiplier = multiplier
+        self.base = base
+
+    def get(self, value)
+        if (value * self.multiplier) >= self.base:
+            return value * self.multiplier
+        else:
+            return 0
+
+
 #
 # The kWh device expects 2 values, but we don't always have them.
 # The Delta class calculates a delta between 2 values and
