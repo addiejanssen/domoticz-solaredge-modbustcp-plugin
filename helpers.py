@@ -30,7 +30,7 @@ class Above:
         self.multiplier = multiplier
         self.base = base
 
-    def get(self, value)
+    def get(self, value):
         if (value * self.multiplier) >= self.base:
             return value * self.multiplier
         else:
