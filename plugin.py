@@ -264,7 +264,7 @@ class BasePlugin:
             # Now process each unit in the table.
 
             for unit in table:
-                DomoLog(LogLevels.EXTRA, str(unit))
+                DomoLog(LogLevels.EXTRA, str(unit[Column.ID]))
 
                 # Skip a unit when the matching device got deleted.
 
