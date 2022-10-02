@@ -3,7 +3,7 @@ import Domoticz
 from enum import IntEnum, unique
 
 #
-# Logging
+# A nice way to only show what we want to show.
 #
 
 @unique
@@ -24,40 +24,25 @@ def DomoLog(level, message):
     if (CurrentLogLevel >= level):
         Domoticz.Log(message)
 
+#
+# Meters can measure power, which can show a positive or negative
+# value depending on the direction of the power.
+# In certain scenario's we want to split it up and "swap" the graph.
+# Showing positive values for both flows of power and only
+# have the part where the value is more than 0.
+# That's where this class comes into play.
+#
 
 class Above:
-    def __init__(self, multiplier, base):
-        self.multiplier = multiplier
+    def __init__(self, base, multiplier):
         self.base = base
+        self.multiplier = multiplier
 
     def get(self, value):
         if (value * self.multiplier) >= self.base:
             return value * self.multiplier
         else:
             return 0
-
-
-#
-# The kWh device expects 2 values, but we don't always have them.
-# The Delta class calculates a delta between 2 values and
-# that is used to satisfy the kWh device.
-#
-
-class Delta:
-
-    def __init__(self):
-        self.prev_value = 0
-        self.delta = 0
-
-    def update(self, new_value, scale = 0):
-        value = new_value * (10 ** scale)
-        self.delta = value - self.prev_value
-        DomoLog(LogLevels.ALL, "Delta: {} - {} = {}".format(value, self.prev_value, self.delta))
-        self.prev_value = value
-
-    def get(self):
-        return self.delta
-
 
 #
 # Domoticz shows graphs with intervals of 5 minutes.

@@ -87,7 +87,8 @@ THREE_PHASE_INVERTER = [
 
 #
 # This lists all implemented options, but an inverter may not return all of them.
-# The following addtional meter type has been defined: SPLIT_PHASE_INVERTER
+# The following addtional meter type has been defined:
+#  - SPLIT_PHASE_INVERTER
 # However, we have no further information for that types of inverter.
 # Let's wait till somebody can help out sharing the actual values returned.
 #
