@@ -264,12 +264,11 @@ class BasePlugin:
             # Now process each unit in the table.
 
             for unit in table:
-                DomoLog(LogLevels.EXTRA, str(unit[Column.ID]))
 
                 # Skip a unit when the matching device got deleted.
 
                 if (unit[Column.ID] + offset) in Devices:
-                    DomoLog(LogLevels.ALL, "-> found in Devices")
+                    DomoLog(LogLevels.EXTRA, str(unit[Column.ID]) + "-> device available")
 
                     # Get the value for this unit from the Inverter data
                     value = self.getUnitValue(unit, inverter_data)
@@ -295,7 +294,7 @@ class BasePlugin:
                         DomoLog(LogLevels.ALL, "-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
 
-                    DomoLog(LogLevels.ALL, "sValue = {}".format(sValue))
+                    DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
 
                     # Only store the value in Domoticz when it has changed.
                     # TODO:
@@ -309,7 +308,7 @@ class BasePlugin:
                     device_count += 1
 
                 else:
-                    DomoLog(LogLevels.EXTRA, "-> Skipping not found in Devices")
+                    DomoLog(LogLevels.ALL, str(unit[Column.ID]) + "-> skipping device not available")
 
             DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
 
