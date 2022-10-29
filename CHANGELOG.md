@@ -2,6 +2,26 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [2.0.1] - 2022-10-29
+
+This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
+
+### Added
+
+Tested with the latest version (0.7.2) of the solaredge_modbus library.
+
+### Changed
+
+During testing it was found that certain inverters return battery information while there were no batteries attached to the inverter.
+First investigations shows that this might be an issue caused by the solaredge_modbus library.
+We will contact the developer of that library to further investigate.
+For now, battery support has been turned off.
+
+### Fixed
+
+- In certain situations, the plugin could run into uninitialized variables.
+- The timeout value used for communication with the inverter has been increased (from 5 to 15 seconds).
+
 ## [2.0.1] - 2022-10-02
 
 This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.

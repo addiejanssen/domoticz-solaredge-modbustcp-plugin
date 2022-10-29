@@ -1,1 +1,1 @@
-solaredge_modbus==0.7.0
+solaredge_modbus==0.7.2
