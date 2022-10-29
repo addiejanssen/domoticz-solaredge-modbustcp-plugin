@@ -449,49 +449,50 @@ class BasePlugin:
 
                         device_offset = max(inverters.InverterUnit)
                         all_meters = self.inverter.meters()
-                        for meter, params in all_meters.items():
-                            meter_values = params.read_all()
+                        if all_meters:
+                            for meter, params in all_meters.items():
+                                meter_values = params.read_all()
 
-                            details = {
-                                "type": "meter",
-                                "offset": device_offset,
-                                "table": None
-                            }
-                            device_offset = device_offset + max(meters.MeterUnit)
+                                details = {
+                                    "type": "meter",
+                                    "offset": device_offset,
+                                    "table": None
+                                }
+                                device_offset = device_offset + max(meters.MeterUnit)
 
-                            meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
-                            DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                                meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
+                                DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
 
-                            if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
-                                details.update({"table": meters.SINGLE_PHASE_METER})
-                            elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
-                                details.update({"table": meters.WYE_THREE_PHASE_METER})
-                            else:
-                                details.update({"table": meters.OTHER_METER})
-                                DomoLog(LogLevels.NORMAL, "Unsupported meter type: {}".format(meter_type))
+                                if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
+                                    details.update({"table": meters.SINGLE_PHASE_METER})
+                                elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                                    details.update({"table": meters.WYE_THREE_PHASE_METER})
+                                else:
+                                    details.update({"table": meters.OTHER_METER})
+                                    DomoLog(LogLevels.NORMAL, "Unsupported meter type: {}".format(meter_type))
 
-                            self.device_dictionary[meter] = details
-                            self.addUpdateDevices(meter)
-
+                                self.device_dictionary[meter] = details
+                                self.addUpdateDevices(meter)
 
                         # And then look for batteries
 
                         device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
                         all_batteries = self.inverter.batteries()
-                        for battery, params in all_batteries.items():
-                            battery_values = params.read_all()
+                        if all_batteries:
+                            for battery, params in all_batteries.items():
+                                battery_values = params.read_all()
 
-                            details = {
-                                "type": "battery",
-                                "offset": device_offset,
-                                "table": None
-                            }
-                            device_offset = device_offset + max(batteries.BatteryUnit)
+                                details = {
+                                    "type": "battery",
+                                    "offset": device_offset,
+                                    "table": None
+                                }
+                                device_offset = device_offset + max(batteries.BatteryUnit)
 
-                            battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-                            DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
+                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
 
-                            DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
+                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
 
 #                            self.device_dictionary[battery] = details
 #                            self.addUpdateDevices(battery)
