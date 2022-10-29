@@ -419,6 +419,11 @@ class BasePlugin:
                     if inverter_values:
                         DomoLog(LogLevels.NORMAL, "Inverter returned information")
 
+                        to_log = inverter_values
+                        if "c_serialnumber" in to_log:
+                            to_log.pop("c_serialnumber")
+                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(device_name, json.dumps(to_log, indent=4, sort_keys=False)))
+
                         inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                         DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
 
