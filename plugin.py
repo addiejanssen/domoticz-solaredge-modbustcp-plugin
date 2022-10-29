@@ -422,7 +422,7 @@ class BasePlugin:
                         to_log = inverter_values
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
-                        DomoLog(LogLevels.VERBOSE, "values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
+                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Inverter", json.dumps(to_log, indent=4, sort_keys=False)))
 
                         inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                         DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
@@ -474,34 +474,40 @@ class BasePlugin:
                                 self.device_dictionary[meter] = details
                                 self.addUpdateDevices(meter)
 
-                        # And then look for batteries
-
-                        device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
-                        all_batteries = self.inverter.batteries()
-                        if all_batteries:
-                            for battery, params in all_batteries.items():
-                                battery_values = params.read_all()
-
-                                to_log = battery_values
-                                if "c_serialnumber" in to_log:
-                                    to_log.pop("c_serialnumber")
-                                DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
-
-                                details = {
-                                    "type": "battery",
-                                    "offset": device_offset,
-                                    "table": None
-                                }
-                                device_offset = device_offset + max(batteries.BatteryUnit)
-
-##                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-##                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
-##
-##                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
-
-#                            self.device_dictionary[battery] = details
-#                            self.addUpdateDevices(battery)
-
+# Disabled battery support from now
+# Some inverters return invalid battery information
+#  although there is no battery attached to the inverter....
+# Seems to be an issue with the solaredge_modbus library
+# Needs investigation
+#
+#                        # And then look for batteries
+#
+#                        device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
+#                        all_batteries = self.inverter.batteries()
+#                        if all_batteries:
+#                            for battery, params in all_batteries.items():
+#                                battery_values = params.read_all()
+#
+#                                to_log = battery_values
+#                                if "c_serialnumber" in to_log:
+#                                    to_log.pop("c_serialnumber")
+#                                DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
+#
+#                                details = {
+#                                    "type": "battery",
+#                                    "offset": device_offset,
+#                                    "table": None
+#                                }
+#                                device_offset = device_offset + max(batteries.BatteryUnit)
+#
+#                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
+#                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+#
+#                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
+#
+##                            self.device_dictionary[battery] = details
+##                            self.addUpdateDevices(battery)
+#
                     else:
                         self.inverter.disconnect()
                         self.retryafter = datetime.now() + self.retrydelay
