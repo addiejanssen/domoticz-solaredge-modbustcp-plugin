@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.2" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -167,24 +167,7 @@ class BasePlugin:
         self.inverter_port = Parameters["Port"]
         self.inverter_unit = int(Parameters["Mode3"]) if Parameters["Mode3"] else 1
 
-        # Let's go
-        DomoLog(LogLevels.ALL, 
-            "onStart Address: {} Port: {} Device Address: {}".format(
-                self.inverter_address,
-                self.inverter_port,
-                self.inverter_unit
-            )
-        )
-
-        self.inverter = solaredge_modbus.Inverter(
-            host = self.inverter_address,
-            port = self.inverter_port,
-            timeout = 5,
-            unit = self.inverter_unit
-        )
-
         # Lets get in touch with the inverter.
-
         self.connectToInverter()
 
         DomoLog(LogLevels.ALL, "Leaving onStart()")
@@ -197,7 +180,7 @@ class BasePlugin:
     def onHeartbeat(self):
         DomoLog(LogLevels.ALL, "Entered onHeartbeat()")
 
-        if self.inverter.connected():
+        if self.inverter and self.inverter.connected():
 
             for device_name, device_details in self.device_dictionary.items():
 
@@ -372,6 +355,26 @@ class BasePlugin:
     def connectToInverter(self):
 
         DomoLog(LogLevels.ALL, "Entered connectToInverter()")
+
+        # Setup the inverter object if it doesn't exist yet
+
+        if (self.inverter == None):
+
+            # Let's go
+            DomoLog(LogLevels.ALL, 
+                "onStart Address: {} Port: {} Device Address: {}".format(
+                    self.inverter_address,
+                    self.inverter_port,
+                    self.inverter_unit
+                )
+            )
+
+            self.inverter = solaredge_modbus.Inverter(
+                host = self.inverter_address,
+                port = self.inverter_port,
+                timeout = 5,
+                unit = self.inverter_unit
+            )
 
         # Do not stress the inverter when it did not respond in the previous attempt to contact it.
 
