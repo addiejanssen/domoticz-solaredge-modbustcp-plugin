@@ -372,7 +372,7 @@ class BasePlugin:
             self.inverter = solaredge_modbus.Inverter(
                 host = self.inverter_address,
                 port = self.inverter_port,
-                timeout = 5,
+                timeout = 15,
                 unit = self.inverter_unit
             )
 
