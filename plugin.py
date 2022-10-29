@@ -489,10 +489,10 @@ class BasePlugin:
                                 }
                                 device_offset = device_offset + max(batteries.BatteryUnit)
 
-                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
-
-                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
+##                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
+##                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+##
+##                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
 
 #                            self.device_dictionary[battery] = details
 #                            self.addUpdateDevices(battery)
