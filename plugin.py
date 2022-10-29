@@ -482,6 +482,11 @@ class BasePlugin:
                             for battery, params in all_batteries.items():
                                 battery_values = params.read_all()
 
+                                to_log = battery_values
+                                if "c_serialnumber" in to_log:
+                                    to_log.pop("c_serialnumber")
+                                DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
+
                                 details = {
                                     "type": "battery",
                                     "offset": device_offset,
