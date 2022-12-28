@@ -14,37 +14,50 @@
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
         <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1" />
+
+        <param field="Mode6" label="Hardware components" width="100px" required="true" default="0" >
+            <options>
+                <option label="Inverter"                  value="0" default="true" />
+                <option label="Inverter+Meters"           value="1"                />
+                <option label="Inverter+Batteries"        value="2"                />
+                <option label="Inverter+Meters+Batteries" value="3"                />
+            </options>
+        </param>
+
         <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
             <options>
                 <option label="Yes" value="Yes" default="true" />
-                <option label="No" value="No" />
+                <option label="No"  value="No"                 />
             </options>
         </param>
+
         <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
             <options>
-                <option label="1  second"  value="1" />
-                <option label="2  seconds" value="2" />
-                <option label="3  seconds" value="3" />
-                <option label="4  seconds" value="4" />
+                <option label="1  second"  value="1"                />
+                <option label="2  seconds" value="2"                />
+                <option label="3  seconds" value="3"                />
+                <option label="4  seconds" value="4"                />
                 <option label="5  seconds" value="5" default="true" />
-                <option label="10 seconds" value="10" />
-                <option label="20 seconds" value="20" />
-                <option label="30 seconds" value="30" />
-                <option label="60 seconds" value="60" />
+                <option label="10 seconds" value="10"               />
+                <option label="20 seconds" value="20"               />
+                <option label="30 seconds" value="30"               />
+                <option label="60 seconds" value="60"               />
             </options>
         </param>
+
         <param field="Mode4" label="Auto Avg/Max math" width="100px">
             <options>
-                <option label="Enabled" value="Yes" default="true" />
-                <option label="Disabled" value="No"/>
+                <option label="Enabled"  value="Yes" default="true" />
+                <option label="Disabled" value="No"                 />
             </options>
         </param>
+
         <param field="Mode5" label="Log level" width="100px">
             <options>
-                <option label="Normal" value="0" default="true" />
-                <option label="Verbose" value="1"/>
-                <option label="Verbose+" value="2"/>
-                <option label="Verbose++" value="3"/>
+                <option label="Normal"    value="0" default="true" />
+                <option label="Verbose"   value="1"                />
+                <option label="Verbose+"  value="2"                />
+                <option label="Verbose++" value="3"                />
             </options>
         </param>
     </params>
@@ -83,8 +96,9 @@ class Column(IntEnum):
     FORMAT          = 8
     PREPEND_ROW     = 9
     PREPEND_MATH    = 10
-    LOOKUP          = 11
-    MATH            = 12
+    APPEND_MATH     = 11
+    LOOKUP          = 12
+    MATH            = 13
 
 
 #
@@ -111,6 +125,11 @@ class BasePlugin:
         # Default heartbeat is 10 seconds; therefore 30 samples in 5 minutes.
 
         self.max_samples = 30
+
+        # Whether we should scan for meters and/or batteries
+
+        self.scan_for_meters = False
+        self.scan_for_batteries = False
 
         # Whether the plugin should add missing devices.
         # If set to True, a deleted device will be added on the next restart of Domoticz.
@@ -140,6 +159,13 @@ class BasePlugin:
         DomoLog(LogLevels.ALL, "Entered onStart()")
 
         # Get the choices of the user and turn them into something we can use
+
+        # Mode 6 defines which hardware components we should scan for
+
+        if Parameters["Mode6"] == 1 or Parameters["Mode6"] == 3:
+            self.scan_for_meters = True
+        if Parameters["Mode6"] == 2:
+            self.scan_for_batteries = True
 
         # Mode 1 defines if we should add missing devices or not
         if Parameters["Mode1"] == "Yes":
@@ -260,7 +286,6 @@ class BasePlugin:
                     # Some devices require multiple values, in which case the plugin will combine those values.
                     # Currently, there is only a need to prepend one value with another.
 
-                    prepend = None
                     if unit[Column.PREPEND_ROW]:
                         DomoLog(LogLevels.ALL, "-> has prepend lookup row")
                         prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
@@ -273,6 +298,15 @@ class BasePlugin:
                             DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
 
                         sValue = unit[Column.FORMAT].format(prepend, value)
+
+                    elif unit[Column.APPEND_MATH]:
+                        DomoLog(LogLevels.ALL, "-> has append math")
+                        m = unit[Column.APPEND_MATH]
+                        append = m.get(0)
+                        DomoLog(LogLevels.ALL, "append = {}".format(append))
+
+                        sValue = unit[Column.FORMAT].format(value, append)
+
                     else:
                         DomoLog(LogLevels.ALL, "-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
@@ -424,8 +458,7 @@ class BasePlugin:
                             to_log.pop("c_serialnumber")
                         DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Inverter", json.dumps(to_log, indent=4, sort_keys=False)))
 
-                        inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                        DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
+                        known_sunspec_DIDS = set(item.value for item in solaredge_modbus.sunspecDID)
 
                         device_offset = 0
                         details = {
@@ -434,80 +467,85 @@ class BasePlugin:
                             "table": None
                         }
 
+                        inverter_type = None
+                        c_sunspec_did = inverter_values["c_sunspec_did"]
+                        if c_sunspec_did in known_sunspec_DIDS:
+                            inverter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                            DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Unknown inverter type: {}".format(c_sunspec_did))
+
                         if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
                             details.update({"table": inverters.SINGLE_PHASE_INVERTER})
                         elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
                             details.update({"table": inverters.THREE_PHASE_INVERTER})
                         else:
                             details.update({"table": inverters.OTHER_INVERTER})
-                            DomoLog(LogLevels.NORMAL, "Unsupported inverter type: {}".format(inverter_type))
 
                         self.device_dictionary["Inverter"] = details
                         self.addUpdateDevices("Inverter")
 
-                        # Let's see if there are any meters attached
+                        # Scan for meters if required
+                        if self.scan_for_meters:
+                            device_offset = max(inverters.InverterUnit)
+                            all_meters = self.inverter.meters()
+                            if all_meters:
+                                for meter, params in all_meters.items():
+                                    meter_values = params.read_all()
 
-                        device_offset = max(inverters.InverterUnit)
-                        all_meters = self.inverter.meters()
-                        if all_meters:
-                            for meter, params in all_meters.items():
-                                meter_values = params.read_all()
+                                    details = {
+                                        "type": "meter",
+                                        "offset": device_offset,
+                                        "table": None
+                                    }
+                                    device_offset = device_offset + max(meters.MeterUnit)
 
-                                details = {
-                                    "type": "meter",
-                                    "offset": device_offset,
-                                    "table": None
-                                }
-                                device_offset = device_offset + max(meters.MeterUnit)
+                                    meter_type = None
+                                    c_sunspec_did = meter_values["c_sunspec_did"]
+                                    if c_sunspec_did in known_sunspec_DIDS:
+                                        meter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                        DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Unknown meter type: {}".format(c_sunspec_did))
 
-                                meter_type = solaredge_modbus.sunspecDID(meter_values["c_sunspec_did"])
-                                DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                                    if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
+                                        details.update({"table": meters.SINGLE_PHASE_METER})
+                                    elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                                        details.update({"table": meters.WYE_THREE_PHASE_METER})
+                                    else:
+                                        details.update({"table": meters.OTHER_METER})
 
-                                if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
-                                    details.update({"table": meters.SINGLE_PHASE_METER})
-                                elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
-                                    details.update({"table": meters.WYE_THREE_PHASE_METER})
-                                else:
-                                    details.update({"table": meters.OTHER_METER})
-                                    DomoLog(LogLevels.NORMAL, "Unsupported meter type: {}".format(meter_type))
+                                    self.device_dictionary[meter] = details
+                                    self.addUpdateDevices(meter)
 
-                                self.device_dictionary[meter] = details
-                                self.addUpdateDevices(meter)
+                        # Scan for batteries if required
+                        if self.scan_for_batteries:
+                            device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
+                            all_batteries = self.inverter.batteries()
+                            if all_batteries:
+                                for battery, params in all_batteries.items():
+                                    battery_values = params.read_all()
 
-# Disabled battery support from now
-# Some inverters return invalid battery information
-#  although there is no battery attached to the inverter....
-# Seems to be an issue with the solaredge_modbus library
-# Needs investigation
-#
-#                        # And then look for batteries
-#
-#                        device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
-#                        all_batteries = self.inverter.batteries()
-#                        if all_batteries:
-#                            for battery, params in all_batteries.items():
-#                                battery_values = params.read_all()
-#
-#                                to_log = battery_values
-#                                if "c_serialnumber" in to_log:
-#                                    to_log.pop("c_serialnumber")
-#                                DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
-#
-#                                details = {
-#                                    "type": "battery",
-#                                    "offset": device_offset,
-#                                    "table": None
-#                                }
-#                                device_offset = device_offset + max(batteries.BatteryUnit)
-#
-#                                battery_type = solaredge_modbus.sunspecDID(battery_values["c_sunspec_did"])
-#                                DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
-#
-#                                DomoLog(LogLevels.NORMAL, "Unsupported battery type: {}".format(battery_type))
-#
-##                            self.device_dictionary[battery] = details
-##                            self.addUpdateDevices(battery)
-#
+                                    details = {
+                                        "type": "battery",
+                                        "offset": device_offset,
+                                        "table": None
+                                    }
+                                    device_offset = device_offset + max(batteries.BatteryUnit)
+
+                                    battery_type = None
+                                    c_sunspec_did = battery_values["c_sunspec_did"]
+                                    if c_sunspec_did in known_sunspec_DIDS:
+                                        battery_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                        DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Unknown battery type: {}".format(c_sunspec_did))
+
+                                    details.update({"table": batteries.OTHER_BATTERY})
+
+                                    self.device_dictionary[battery] = details
+                                    self.addUpdateDevices(battery)
+
                     else:
                         self.inverter.disconnect()
                         self.retryafter = datetime.now() + self.retrydelay

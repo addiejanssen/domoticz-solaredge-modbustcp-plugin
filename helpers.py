@@ -1,5 +1,6 @@
 import Domoticz
 
+from datetime import datetime
 from enum import IntEnum, unique
 
 #
@@ -23,6 +24,16 @@ def SetLogLevel(level):
 def DomoLog(level, message):
     if (CurrentLogLevel >= level):
         Domoticz.Log(message)
+
+#
+# Return a timestamp that can be used in a managed counter
+#
+
+class Timestamp:
+
+    # value is being ignored for now
+    def get(self, value):
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 #
 # Meters can measure power, which can show a positive or negative
