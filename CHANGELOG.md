@@ -2,6 +2,24 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [2.0.3] - 2022-12-28
+
+This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
+
+> This is an Alpha version!
+> Use at your own risk, but be aware that historical (battery) information may be lost in next versions!
+
+### Added
+
+A battery table has been added to process the information returned by the inverter.
+This is a first attempt to display battery information in Domoticz.
+The devices in Domoticz may not show correct information at this point in time.
+
+### Fixed
+
+- The plugin now provides an option to select if it should scan for batteries and/or meters.
+  This allows skipping ghost devices reported by the inverter.
+
 ## [2.0.2] - 2022-10-29
 
 This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
