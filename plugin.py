@@ -244,6 +244,7 @@ class BasePlugin:
                             DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
 
                     if values:
+                        DomoLog(LogLevels.NORMAL, "Inverter returned information for {}".format(device_name))
                         to_log = values
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
