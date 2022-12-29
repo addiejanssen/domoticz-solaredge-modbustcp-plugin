@@ -156,7 +156,7 @@ class BasePlugin:
     #
 
     def onStart(self):
-        DomoLog(LogLevels.MAX, "Entered onStart()")
+        DomoLog(LogLevels.EXTRA, "Entered onStart()")
 
         # Get the choices of the user and turn them into something we can use
 
@@ -202,7 +202,7 @@ class BasePlugin:
         # Lets get in touch with the inverter.
         self.connectToInverter()
 
-        DomoLog(LogLevels.MAX, "Leaving onStart()")
+        DomoLog(LogLevels.EXTRA, "Leaving onStart()")
 
 
     #
@@ -210,7 +210,7 @@ class BasePlugin:
     #
 
     def onHeartbeat(self):
-        DomoLog(LogLevels.MAX, "Entered onHeartbeat()")
+        DomoLog(LogLevels.EXTRA, "Entered onHeartbeat()")
 
         if self.inverter and self.inverter.connected():
 
@@ -256,7 +256,7 @@ class BasePlugin:
         else:
             self.connectToInverter()
 
-        DomoLog(LogLevels.MAX, "Leaving onHeartbeat()")
+        DomoLog(LogLevels.EXTRA, "Leaving onHeartbeat()")
 
     #
     # Go through the table and update matching devices
@@ -265,7 +265,7 @@ class BasePlugin:
 
     def processValues(self, device_details, inverter_data):
 
-        DomoLog(LogLevels.MAX, "Entered processValues()")
+        DomoLog(LogLevels.EXTRA, "Entered processValues()")
 
         if device_details["table"]:
             table = device_details["table"]
@@ -335,7 +335,7 @@ class BasePlugin:
 
             DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
 
-        DomoLog(LogLevels.MAX, "Leaving processValues()")
+        DomoLog(LogLevels.EXTRA, "Leaving processValues()")
 
     #
     # Get the value of a particular unit from the inverter_data
@@ -344,7 +344,7 @@ class BasePlugin:
 
     def getUnitValue(self, row, inverter_data):
 
-        DomoLog(LogLevels.MAX, "Entered getUnitValue()")
+        DomoLog(LogLevels.EXTRA, "Entered getUnitValue()")
 
         # For certain units the table has a lookup table to replace the value with something else.
         if row[Column.LOOKUP]:
@@ -383,7 +383,7 @@ class BasePlugin:
 
         DomoLog(LogLevels.MAX, "value = {}".format(value))
 
-        DomoLog(LogLevels.MAX, "Leaving getUnitValue()")
+        DomoLog(LogLevels.EXTRA, "Leaving getUnitValue()")
 
         return value
 
@@ -394,7 +394,7 @@ class BasePlugin:
     
     def connectToInverter(self):
 
-        DomoLog(LogLevels.MAX, "Entered connectToInverter()")
+        DomoLog(LogLevels.EXTRA, "Entered connectToInverter()")
 
         # Setup the inverter object if it doesn't exist yet
 
@@ -509,7 +509,7 @@ class BasePlugin:
                                         to_log = meter_values
                                         if "c_serialnumber" in to_log:
                                             to_log.pop("c_serialnumber")
-                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Meter", json.dumps(to_log, indent=4, sort_keys=False)))
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(meter, json.dumps(to_log, indent=4, sort_keys=False)))
 
                                         details = {
                                             "type": "meter",
@@ -536,7 +536,7 @@ class BasePlugin:
                                         self.device_dictionary[meter] = details
                                         self.addUpdateDevices(meter)
                                     else:
-                                        DomoLog(LogLevels.NORMAL, "Found a meter. BUT... inverter didn't return meter information")
+                                        DomoLog(LogLevels.NORMAL, "Found {}. BUT... inverter didn't return information".format(meter))
                             else:
                                 DomoLog(LogLevels.NORMAL, "No meters found")
                         else:
@@ -561,7 +561,7 @@ class BasePlugin:
                                         to_log = battery_values
                                         if "c_serialnumber" in to_log:
                                             to_log.pop("c_serialnumber")
-                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Battery", json.dumps(to_log, indent=4, sort_keys=False)))
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
 
                                         details = {
                                             "type": "battery",
@@ -583,7 +583,7 @@ class BasePlugin:
                                         self.device_dictionary[battery] = details
                                         self.addUpdateDevices(battery)
                                     else:
-                                        DomoLog(LogLevels.NORMAL, "Found a battery. BUT... inverter didn't return battery information")
+                                        DomoLog(LogLevels.NORMAL, "Found {}. BUT... inverter didn't return information".format(battery))
                             else:
                                 DomoLog(LogLevels.NORMAL, "No batteries found")
                         else:
@@ -599,7 +599,7 @@ class BasePlugin:
         else:
             DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
-        DomoLog(LogLevels.MAX, "Leaving connectToInverter()")
+        DomoLog(LogLevels.EXTRA, "Leaving connectToInverter()")
 
     #
     # Go through the table and update matching devices
@@ -608,7 +608,7 @@ class BasePlugin:
     
     def addUpdateDevices(self, device_name):
 
-        DomoLog(LogLevels.MAX, "Entered addUpdateDevices()")
+        DomoLog(LogLevels.EXTRA, "Entered addUpdateDevices()")
 
         if self.device_dictionary[device_name] and self.device_dictionary[device_name]["table"]:
 
@@ -665,7 +665,7 @@ class BasePlugin:
                             Used=1,
                         ).Create()
 
-        DomoLog(LogLevels.MAX, "Leaving addUpdateDevices()")
+        DomoLog(LogLevels.EXTRA, "Leaving addUpdateDevices()")
 
 #
 # Instantiate the plugin and register the supported callbacks.
