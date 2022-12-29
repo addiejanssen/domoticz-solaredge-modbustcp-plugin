@@ -156,16 +156,22 @@ class BasePlugin:
     #
 
     def onStart(self):
-        DomoLog(LogLevels.ALL, "Entered onStart()")
+        DomoLog(LogLevels.MAX, "Entered onStart()")
 
         # Get the choices of the user and turn them into something we can use
 
         # Mode 6 defines which hardware components we should scan for
-
-        if Parameters["Mode6"] == 1 or Parameters["Mode6"] == 3:
+        components = int(Parameters["Mode6"]) if Parameters["Mode6"] else 0
+        if components == 1:
             self.scan_for_meters = True
-        if Parameters["Mode6"] == 2:
+        elif components == 2:
             self.scan_for_batteries = True
+        elif components == 3:
+            self.scan_for_meters = True
+            self.scan_for_batteries = True
+        else:
+            self.scan_for_meters = False
+            self.scan_for_batteries = False
 
         # Mode 1 defines if we should add missing devices or not
         if Parameters["Mode1"] == "Yes":
@@ -196,7 +202,7 @@ class BasePlugin:
         # Lets get in touch with the inverter.
         self.connectToInverter()
 
-        DomoLog(LogLevels.ALL, "Leaving onStart()")
+        DomoLog(LogLevels.MAX, "Leaving onStart()")
 
 
     #
@@ -204,7 +210,7 @@ class BasePlugin:
     #
 
     def onHeartbeat(self):
-        DomoLog(LogLevels.ALL, "Entered onHeartbeat()")
+        DomoLog(LogLevels.MAX, "Entered onHeartbeat()")
 
         if self.inverter and self.inverter.connected():
 
@@ -250,7 +256,7 @@ class BasePlugin:
         else:
             self.connectToInverter()
 
-        DomoLog(LogLevels.ALL, "Leaving onHeartbeat()")
+        DomoLog(LogLevels.MAX, "Leaving onHeartbeat()")
 
     #
     # Go through the table and update matching devices
@@ -259,7 +265,7 @@ class BasePlugin:
 
     def processValues(self, device_details, inverter_data):
 
-        DomoLog(LogLevels.ALL, "Entered processValues()")
+        DomoLog(LogLevels.MAX, "Entered processValues()")
 
         if device_details["table"]:
             table = device_details["table"]
@@ -287,28 +293,28 @@ class BasePlugin:
                     # Currently, there is only a need to prepend one value with another.
 
                     if unit[Column.PREPEND_ROW]:
-                        DomoLog(LogLevels.ALL, "-> has prepend lookup row")
+                        DomoLog(LogLevels.MAX, "-> has prepend lookup row")
                         prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
-                        DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
+                        DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
 
                         if unit[Column.PREPEND_MATH]:
-                            DomoLog(LogLevels.ALL, "-> has prepend math")
+                            DomoLog(LogLevels.MAX, "-> has prepend math")
                             m = unit[Column.PREPEND_MATH]
                             prepend = m.get(prepend)
-                            DomoLog(LogLevels.ALL, "prepend = {}".format(prepend))
+                            DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
 
                         sValue = unit[Column.FORMAT].format(prepend, value)
 
                     elif unit[Column.APPEND_MATH]:
-                        DomoLog(LogLevels.ALL, "-> has append math")
+                        DomoLog(LogLevels.MAX, "-> has append math")
                         m = unit[Column.APPEND_MATH]
                         append = m.get(0)
-                        DomoLog(LogLevels.ALL, "append = {}".format(append))
+                        DomoLog(LogLevels.MAX, "append = {}".format(append))
 
                         sValue = unit[Column.FORMAT].format(value, append)
 
                     else:
-                        DomoLog(LogLevels.ALL, "-> no prepend")
+                        DomoLog(LogLevels.MAX, "-> no prepend")
                         sValue = unit[Column.FORMAT].format(value)
 
                     DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
@@ -325,11 +331,11 @@ class BasePlugin:
                     device_count += 1
 
                 else:
-                    DomoLog(LogLevels.ALL, str(unit[Column.ID]) + "-> skipping device not available")
+                    DomoLog(LogLevels.MAX, str(unit[Column.ID]) + "-> skipping device not available")
 
             DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
 
-        DomoLog(LogLevels.ALL, "Leaving processValues()")
+        DomoLog(LogLevels.MAX, "Leaving processValues()")
 
     #
     # Get the value of a particular unit from the inverter_data
@@ -338,11 +344,11 @@ class BasePlugin:
 
     def getUnitValue(self, row, inverter_data):
 
-        DomoLog(LogLevels.ALL, "Entered getUnitValue()")
+        DomoLog(LogLevels.MAX, "Entered getUnitValue()")
 
         # For certain units the table has a lookup table to replace the value with something else.
         if row[Column.LOOKUP]:
-            DomoLog(LogLevels.ALL, "-> looking up...")
+            DomoLog(LogLevels.MAX, "-> looking up...")
 
             lookup_table = row[Column.LOOKUP]
             to_lookup = int(inverter_data[row[Column.MODBUSNAME]])
@@ -354,7 +360,7 @@ class BasePlugin:
 
         # When a math object is setup for the unit, update the samples in it and get the calculated value.
         elif row[Column.MATH] and self.do_math:
-            DomoLog(LogLevels.ALL, "-> calculating...")
+            DomoLog(LogLevels.MAX, "-> calculating...")
             m = row[Column.MATH]
             if row[Column.MODBUSSCALE]:
                 m.update(inverter_data[row[Column.MODBUSNAME]], inverter_data[row[Column.MODBUSSCALE]])
@@ -366,18 +372,18 @@ class BasePlugin:
         # When there is no math object then just store the latest value.
         # Some date from the inverter need to be scaled before they can be stored.
         elif row[Column.MODBUSSCALE]:
-            DomoLog(LogLevels.ALL, "-> scaling...")
+            DomoLog(LogLevels.MAX, "-> scaling...")
             # we need to do some calculation here
             value = inverter_data[row[Column.MODBUSNAME]] * (10 ** inverter_data[row[Column.MODBUSSCALE]])
 
         # Some data require no action but storing in Domoticz.
         else:
-            DomoLog(LogLevels.ALL, "-> copying...")
+            DomoLog(LogLevels.MAX, "-> copying...")
             value = inverter_data[row[Column.MODBUSNAME]]
 
-        DomoLog(LogLevels.ALL, "value = {}".format(value))
+        DomoLog(LogLevels.MAX, "value = {}".format(value))
 
-        DomoLog(LogLevels.ALL, "Leaving getUnitValue()")
+        DomoLog(LogLevels.MAX, "Leaving getUnitValue()")
 
         return value
 
@@ -388,14 +394,14 @@ class BasePlugin:
     
     def connectToInverter(self):
 
-        DomoLog(LogLevels.ALL, "Entered connectToInverter()")
+        DomoLog(LogLevels.MAX, "Entered connectToInverter()")
 
         # Setup the inverter object if it doesn't exist yet
 
         if (self.inverter == None):
 
             # Let's go
-            DomoLog(LogLevels.ALL, 
+            DomoLog(LogLevels.MAX, 
                 "onStart Address: {} Port: {} Device Address: {}".format(
                     self.inverter_address,
                     self.inverter_port,
@@ -487,9 +493,13 @@ class BasePlugin:
 
                         # Scan for meters if required
                         if self.scan_for_meters:
+                            DomoLog(LogLevels.NORMAL, "Scanning for meters")
+
                             device_offset = max(inverters.InverterUnit)
                             all_meters = self.inverter.meters()
                             if all_meters:
+                                DomoLog(LogLevels.NORMAL, "Found at least one meter")
+
                                 for meter, params in all_meters.items():
                                     meter_values = params.read_all()
 
@@ -520,9 +530,13 @@ class BasePlugin:
 
                         # Scan for batteries if required
                         if self.scan_for_batteries:
+                            DomoLog(LogLevels.NORMAL, "Scanning for batteries")
+
                             device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
                             all_batteries = self.inverter.batteries()
                             if all_batteries:
+                                DomoLog(LogLevels.NORMAL, "Found at least one battery")
+
                                 for battery, params in all_batteries.items():
                                     battery_values = params.read_all()
 
@@ -555,7 +569,7 @@ class BasePlugin:
         else:
             DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
-        DomoLog(LogLevels.ALL, "Leaving connectToInverter()")
+        DomoLog(LogLevels.MAX, "Leaving connectToInverter()")
 
     #
     # Go through the table and update matching devices
@@ -564,7 +578,7 @@ class BasePlugin:
     
     def addUpdateDevices(self, device_name):
 
-        DomoLog(LogLevels.ALL, "Entered addUpdateDevices()")
+        DomoLog(LogLevels.MAX, "Entered addUpdateDevices()")
 
         if self.device_dictionary[device_name] and self.device_dictionary[device_name]["table"]:
 
@@ -621,7 +635,7 @@ class BasePlugin:
                             Used=1,
                         ).Create()
 
-        DomoLog(LogLevels.ALL, "Leaving addUpdateDevices()")
+        DomoLog(LogLevels.MAX, "Leaving addUpdateDevices()")
 
 #
 # Instantiate the plugin and register the supported callbacks.

@@ -13,7 +13,7 @@ class LogLevels(IntEnum):
     NORMAL      = 0
     VERBOSE     = 1
     EXTRA       = 2
-    ALL         = 3
+    MAX         = 3
 
 CurrentLogLevel = LogLevels.NORMAL
 
@@ -79,7 +79,7 @@ class Average:
         while (len(self.samples) > self.max_samples):
             del self.samples[0]
 
-        DomoLog(LogLevels.ALL, "Average: {} - {} values".format(self.get(), len(self.samples)))
+        DomoLog(LogLevels.MAX, "Average: {} - {} values".format(self.get(), len(self.samples)))
 
     def get(self):
         return sum(self.samples) / len(self.samples)
@@ -108,7 +108,7 @@ class Maximum:
         while (len(self.samples) > self.max_samples):
             del self.samples[0]
 
-        DomoLog(LogLevels.ALL, "Maximum: {} - {} values".format(self.get(), len(self.samples)))
+        DomoLog(LogLevels.MAX, "Maximum: {} - {} values".format(self.get(), len(self.samples)))
 
     def get(self):
         return max(self.samples)
