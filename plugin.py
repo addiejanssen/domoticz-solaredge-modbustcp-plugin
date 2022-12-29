@@ -12,10 +12,10 @@
 <plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.3" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
-        <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
-        <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1" />
+        <param field="Port" label="Inverter Port Number" width="150px" required="true" default="502" />
+        <param field="Mode3" label="Inverter Modbus device address" width="150px" required="true" default="1" />
 
-        <param field="Mode6" label="Hardware components" width="100px" required="true" default="0" >
+        <param field="Mode6" label="Hardware components" width="150px" required="true" default="0" >
             <options>
                 <option label="Inverter"                  value="0" default="true" />
                 <option label="Inverter+Meters"           value="1"                />
@@ -24,14 +24,14 @@
             </options>
         </param>
 
-        <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
+        <param field="Mode1" label="Add missing devices" width="150px" required="true" default="Yes" >
             <options>
                 <option label="Yes" value="Yes" default="true" />
                 <option label="No"  value="No"                 />
             </options>
         </param>
 
-        <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
+        <param field="Mode2" label="Interval" width="150px" required="true" default="5" >
             <options>
                 <option label="1  second"  value="1"                />
                 <option label="2  seconds" value="2"                />
@@ -45,14 +45,14 @@
             </options>
         </param>
 
-        <param field="Mode4" label="Auto Avg/Max math" width="100px">
+        <param field="Mode4" label="Auto Avg/Max math" width="150px">
             <options>
                 <option label="Enabled"  value="Yes" default="true" />
                 <option label="Disabled" value="No"                 />
             </options>
         </param>
 
-        <param field="Mode5" label="Log level" width="100px">
+        <param field="Mode5" label="Log level" width="150px">
             <options>
                 <option label="Normal"    value="0" default="true" />
                 <option label="Verbose"   value="1"                />
