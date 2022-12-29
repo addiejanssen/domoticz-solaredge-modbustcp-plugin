@@ -503,30 +503,38 @@ class BasePlugin:
                                 for meter, params in all_meters.items():
                                     meter_values = params.read_all()
 
-                                    details = {
-                                        "type": "meter",
-                                        "offset": device_offset,
-                                        "table": None
-                                    }
-                                    device_offset = device_offset + max(meters.MeterUnit)
+                                    if meter_values:
+                                        DomoLog(LogLevels.NORMAL, "Inverter returned meter information")
 
-                                    meter_type = None
-                                    c_sunspec_did = meter_values["c_sunspec_did"]
-                                    if c_sunspec_did in known_sunspec_DIDS:
-                                        meter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
-                                        DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
-                                    else:
-                                        DomoLog(LogLevels.NORMAL, "Unknown meter type: {}".format(c_sunspec_did))
+                                        to_log = meter_values
+                                        if "c_serialnumber" in to_log:
+                                            to_log.pop("c_serialnumber")
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Meter", json.dumps(to_log, indent=4, sort_keys=False)))
 
-                                    if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
-                                        details.update({"table": meters.SINGLE_PHASE_METER})
-                                    elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
-                                        details.update({"table": meters.WYE_THREE_PHASE_METER})
-                                    else:
-                                        details.update({"table": meters.OTHER_METER})
+                                        details = {
+                                            "type": "meter",
+                                            "offset": device_offset,
+                                            "table": None
+                                        }
+                                        device_offset = device_offset + max(meters.MeterUnit)
 
-                                    self.device_dictionary[meter] = details
-                                    self.addUpdateDevices(meter)
+                                        meter_type = None
+                                        c_sunspec_did = meter_values["c_sunspec_did"]
+                                        if c_sunspec_did in known_sunspec_DIDS:
+                                            meter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                            DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                                        else:
+                                            DomoLog(LogLevels.NORMAL, "Unknown meter type: {}".format(c_sunspec_did))
+
+                                        if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
+                                            details.update({"table": meters.SINGLE_PHASE_METER})
+                                        elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                                            details.update({"table": meters.WYE_THREE_PHASE_METER})
+                                        else:
+                                            details.update({"table": meters.OTHER_METER})
+
+                                        self.device_dictionary[meter] = details
+                                        self.addUpdateDevices(meter)
 
                         # Scan for batteries if required
                         if self.scan_for_batteries:
@@ -540,25 +548,33 @@ class BasePlugin:
                                 for battery, params in all_batteries.items():
                                     battery_values = params.read_all()
 
-                                    details = {
-                                        "type": "battery",
-                                        "offset": device_offset,
-                                        "table": None
-                                    }
-                                    device_offset = device_offset + max(batteries.BatteryUnit)
+                                    if battery_values:
+                                        DomoLog(LogLevels.NORMAL, "Inverter returned battery information")
 
-                                    battery_type = None
-                                    c_sunspec_did = battery_values["c_sunspec_did"]
-                                    if c_sunspec_did in known_sunspec_DIDS:
-                                        battery_type = solaredge_modbus.sunspecDID(c_sunspec_did)
-                                        DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
-                                    else:
-                                        DomoLog(LogLevels.NORMAL, "Unknown battery type: {}".format(c_sunspec_did))
+                                        to_log = battery_values
+                                        if "c_serialnumber" in to_log:
+                                            to_log.pop("c_serialnumber")
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Battery", json.dumps(to_log, indent=4, sort_keys=False)))
 
-                                    details.update({"table": batteries.OTHER_BATTERY})
+                                        details = {
+                                            "type": "battery",
+                                            "offset": device_offset,
+                                            "table": None
+                                        }
+                                        device_offset = device_offset + max(batteries.BatteryUnit)
 
-                                    self.device_dictionary[battery] = details
-                                    self.addUpdateDevices(battery)
+                                        battery_type = None
+                                        c_sunspec_did = battery_values["c_sunspec_did"]
+                                        if c_sunspec_did in known_sunspec_DIDS:
+                                            battery_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                            DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+                                        else:
+                                            DomoLog(LogLevels.NORMAL, "Unknown battery type: {}".format(c_sunspec_did))
+
+                                        details.update({"table": batteries.OTHER_BATTERY})
+
+                                        self.device_dictionary[battery] = details
+                                        self.addUpdateDevices(battery)
 
                     else:
                         self.inverter.disconnect()
