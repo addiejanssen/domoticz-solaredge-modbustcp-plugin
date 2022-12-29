@@ -251,7 +251,7 @@ class BasePlugin:
 
                         self.processValues(device_details, values)
                     else:
-                        DomoLog(LogLevels.NORMAL, "Inverter returned no information")
+                        DomoLog(LogLevels.NORMAL, "Inverter returned no information for {}".format(device_name))
 
         else:
             self.connectToInverter()
