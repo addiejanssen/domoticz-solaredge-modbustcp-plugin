@@ -535,6 +535,13 @@ class BasePlugin:
 
                                         self.device_dictionary[meter] = details
                                         self.addUpdateDevices(meter)
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Found a meter. BUT... inverter didn't return meter information")
+                            else:
+                                DomoLog(LogLevels.NORMAL, "No meters found")
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Skip scanning for meters")
+                        # End scan for meters
 
                         # Scan for batteries if required
                         if self.scan_for_batteries:
@@ -575,6 +582,13 @@ class BasePlugin:
 
                                         self.device_dictionary[battery] = details
                                         self.addUpdateDevices(battery)
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Found a battery. BUT... inverter didn't return battery information")
+                            else:
+                                DomoLog(LogLevels.NORMAL, "No batteries found")
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Skip scanning for batteries")
+                        # End scan for batteries
 
                     else:
                         self.inverter.disconnect()
