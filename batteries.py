@@ -1,6 +1,6 @@
 import solaredge_modbus
 
-from helpers import Timestamp
+from helpers import Above
 from enum import IntEnum, unique
 
 @unique
@@ -49,9 +49,9 @@ OTHER_BATTERY = [
     [BatteryUnit.MAX_TEMP,                 "Maximum Temperature",                0xF3, 0x05,    0x00,       {},      "maximum_temperature",                None,        "{:.2f}",  None,        None,         None,        None,                                None      ],
     [BatteryUnit.INSTANT_VOLTAGE,          "Instantaneous Voltage",              0xF3, 0x08,    0x00,       {},      "instantaneous_voltage",              None,        "{:.2f}",  None,        None,         None,        None,                                None      ],
     [BatteryUnit.INSTANT_CURRENT,          "Instantaneous Current",              0xF3, 0x17,    0x00,       {},      "instantaneous_current",              None,        "{:.2f}",  None,        None,         None,        None,                                None      ],
-    [BatteryUnit.INSTANT_POWER,            "Instantaneous Power",                0xF8, 0x01,    0x00,       {},      "instantaneous_power",                None,        "{}",      None,        None,         None,        None,                                None      ],
-    [BatteryUnit.LIFE_EXPORT_ENERGY_COUNT, "Total Exported Energy",              0xF3, 0x1D,    0x04,       {},      "lifetime_export_energy_counter",     None,        "{};{}",   13,          None,         None,        None,                                None      ],
-    [BatteryUnit.LIFE_IMPORT_ENERGY_COUNT, "Total Imported Energy",              0xF3, 0x1D,    0x00,       {},      "lifetime_import_energy_counter",     None,        "{};{}",   13,          None,         None,        None,                                None      ],
+    [BatteryUnit.INSTANT_POWER,            "Instantaneous Power",                0xF8, 0x01,    0x00,       {},      "instantaneous_power",                None,        "{:.2f}",  None,        None,         None,        None,                                None      ],
+    [BatteryUnit.LIFE_EXPORT_ENERGY_COUNT, "Total Exported Energy",              0xF3, 0x1D,    0x04,       {},      "lifetime_export_energy_counter",     None,        "{};{}",   13,          Above(0,1),   None,        None,                                None      ],
+    [BatteryUnit.LIFE_IMPORT_ENERGY_COUNT, "Total Imported Energy",              0xF3, 0x1D,    0x00,       {},      "lifetime_import_energy_counter",     None,        "{};{}",   13,          Above(0,1),   None,        None,                                None      ],
     [BatteryUnit.MAX_ENERGY,               "Maximum Energy",                     0xF3, 0x21,    0x00,       {},      "maximum_energy",                     None,        "-1;{}",   None,        None,         None,        None,                                None      ],
     [BatteryUnit.AVAILABLE_ENERGY,         "Available Energy",                   0xF3, 0x21,    0x00,       {},      "available_energy",                   None,        "-1;{}",   None,        None,         None,        None,                                None      ],
     [BatteryUnit.SOH,                      "State of Health",                    0xF3, 0x06,    0x00,       {},      "soh",                                None,        "{}",      None,        None,         None,        None,                                None      ],
