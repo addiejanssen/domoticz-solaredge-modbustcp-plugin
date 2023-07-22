@@ -14,7 +14,7 @@ The inverter needs to be connected to the network (either wired or wireless) and
 
 ## Installation of the plugin
 
-Install D`omoticz` and make sure that `python 3.x` is installed on the computer.
+Install `Domoticz` and make sure that `python 3.x` is installed on the computer.
 
 Download the plugin zip-file from [releases](https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/releases)
 
