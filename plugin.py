@@ -9,7 +9,11 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.2" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+    <description>
+        <h2>SolarEdge ModbusTCP plugin - Rev. 1.1.2</h2><br/>
+        Connect SolarEdge inverter by Modbus, to get real time data
+    </description>
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -148,6 +152,7 @@ class Unit(IntEnum):
     VOLTAGE_DC      = 20
     POWER_DC        = 21
     TEMPERATURE     = 22
+    LIMIT           = 23
 
 #
 # The plugin is using a few tables to setup Domoticz and to process the feedback from the inverter.
@@ -191,7 +196,8 @@ SINGLE_PHASE_INVERTER = [
     [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
     [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
+    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ],
+    [Unit.LIMIT,           "Power Limit",       0xF3,  0x06,     0x00,       {},                     "active_power_limit",  None,               "{}",      None,           None,                                  None ],
 ]
 
 #
@@ -221,7 +227,9 @@ THREE_PHASE_INVERTER = [
     [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
     [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
     [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
+    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ],
+    [Unit.LIMIT,           "Power Limit",       0xF3,  0x06,     0x00,       {},                     "active_power_limit",  None,               "{}",      None,           None,                                  None ],
+
 ]
 
 #
@@ -334,6 +342,7 @@ class BasePlugin:
                     device_count = 0
 
                     # Now process each unit in the table.
+                    now = datetime.now()
 
                     for unit in self._LOOKUP_TABLE:
                         Domoticz.Debug(str(unit))
@@ -404,7 +413,11 @@ class BasePlugin:
                             #   We should not store certain values when the inverter is sleeping.
                             #   That results in a strange graph; it would be better just to skip it then.
 
-                            if sValue != Devices[unit[Column.ID]].sValue:
+                            # But we have to update values at least every 5 minutes, to avoid strange graph!
+                            lastUpdate = now - datetime.strptime(Devices[unit[Column.ID]].LastUpdate, "%Y-%m-%d %H:%M:%S")
+
+                            # Update value to Domoticz if it changes or if not updated in the last 5 minutes
+                            if sValue != Devices[unit[Column.ID]].sValue or lastUpdate >= timedelta(minutes=5):
                                 Devices[unit[Column.ID]].Update(nValue=0, sValue=str(sValue), TimedOut=0)
                                 updated += 1
 
