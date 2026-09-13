@@ -180,7 +180,12 @@ class BasePlugin:
             self.add_devices = False
 
         # Mode 4 defines if we should do math or not
-        if Parameters["Mode4"] == "Yes":
+        # Version 1.x.x of the plugin used "math_enabled" and "math_disabled" to define the math setting.
+        # Version 2.x.x of the plugin uses "Yes" and "No" to define the math setting.
+        # The following code will check if the user is using the old or new version and set the math setting accordingly.
+        # The old version will be removed in a future release.
+        
+        if Parameters["Mode4"] == "Yes" or Parameters["Mode4"] == "math_enabled":
             self.do_math = True
         else:
             self.do_math = False
