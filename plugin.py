@@ -9,18 +9,57 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.2.0" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+    <description>
+        <h2><br/>SolarEdge ModbusTCP Plugin</h2>
+        <p>Version 1.2.0</p>
+        <p>Reads data from SolarEdge power inverters over ModbusTCP and creates Domoticz devices for:</p>
+        <ul>
+            <li>Inverter status and vendor status</li>
+            <li>AC/DC current, voltage and power</li>
+            <li>Frequency, power factor and temperature</li>
+            <li>Energy production (lifetime and daily)</li>
+        </ul>
+        <br/><span style="font-weight: bold;">Requirements:</span>
+        <ul>
+            <li>The inverter must be connected to the network (wired or wireless).</li>
+            <li>Modbus/TCP must be enabled on the inverter (see inverter documentation).</li>
+            <li>Python 3.x and the <i>solaredge_modbus</i> library must be installed.</li>
+        </ul>
+        <br/><span style="font-weight: bold;">Connection settings</span>
+    </description>
+
     <params>
-        <param field="Address" label="Inverter IP Address" width="150px" required="true" />
-        <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
-        <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1" />
-        <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
+        <param field="Address" label="Inverter IP Address" width="150px" required="true">
+            <description>
+                <br/><span style="color: yellow;">IP address or hostname of the SolarEdge inverter.</span>
+            </description>
+        </param>
+        <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502">
+            <description>
+                <br/><span style="color: yellow;">Modbus TCP port of the inverter (default: 502).</span>
+            </description>
+        </param>
+        <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1">
+            <description>
+                <br/><span style="color: yellow;">Modbus unit/slave address of the inverter (default: 1).</span>
+            </description>
+        </param>
+        <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes">
+            <description>
+                <br/>Set to <b>Yes</b> to automatically create devices when the plugin starts.<br/>
+                Set to <b>No</b> after manually deleting unused devices to prevent them from being recreated on restart.
+            </description>
             <options>
                 <option label="Yes" value="Yes" default="true" />
                 <option label="No" value="No" />
             </options>
         </param>
-        <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
+        <param field="Mode2" label="Interval" width="100px" required="true" default="5">
+            <description>
+                <br/>How often the plugin reads data from the inverter.<br/>
+                Shorter intervals give more accurate graphs but increase network traffic and inverter load.
+            </description>
             <options>
                 <option label="1  second"  value="1" />
                 <option label="2  seconds" value="2" />
@@ -34,12 +73,21 @@
             </options>
         </param>
         <param field="Mode4" label="Auto Avg/Max math" width="100px">
+            <description>
+                <br/><b>Enabled</b>: Domoticz graphs show averaged (or maximum) values over the 5-minute graph interval.<br/>
+                <b>Disabled</b>: Domoticz graphs show the last retrieved value only.
+            </description>
             <options>
                 <option label="Enabled" value="math_enabled" default="true" />
                 <option label="Disabled" value="math_disabled"/>
             </options>
         </param>
         <param field="Mode5" label="Log level" width="100px">
+            <description>
+                <br/><b>Normal</b>: only errors and status messages are logged.<br/>
+                <b>Extra</b>: all values received from the inverter are printed in the log.<br/>
+                <b>Debug</b>: full debug output including internal state.
+            </description>
             <options>
                 <option label="Normal" value="Normal" default="true" />
                 <option label="Extra" value="Extra"/>
@@ -51,12 +99,225 @@
 """
 
 import Domoticz
-import solaredge_modbus
+import inspect
 import json
+import sys
+import traceback
+import types
 
 from datetime import datetime, timedelta
-from enum import IntEnum, unique, auto
+from enum import IntEnum, unique
 from pymodbus.exceptions import ConnectionException
+
+
+def _apply_pymodbus_legacy_compat():
+    try:
+        import pymodbus.constants as pymodbus_constants
+    except ImportError:
+        return
+
+    if not hasattr(pymodbus_constants, "Endian"):
+        class Endian:
+            BIG = "big"
+            LITTLE = "little"
+            Big = "big"
+            Little = "little"
+
+        pymodbus_constants.Endian = Endian
+
+    try:
+        import pymodbus.payload
+    except ImportError:
+        from pymodbus.client import ModbusBaseClient
+
+        class BinaryPayloadDecoder:
+            def __init__(self, registers, byteorder="big", wordorder="big"):
+                self._registers = list(registers)
+                self._wordorder = wordorder
+
+            @classmethod
+            def fromRegisters(cls, registers, byteorder="big", wordorder="big"):
+                return cls(registers, byteorder=byteorder, wordorder=wordorder)
+
+            def _decode(self, data_type, count=1):
+                registers = self._registers[:count]
+                self._registers = self._registers[count:]
+                return ModbusBaseClient.convert_from_registers(
+                    registers,
+                    data_type,
+                    word_order=self._wordorder,
+                )
+
+            def decode_16bit_int(self):
+                return self._decode(ModbusBaseClient.DATATYPE.INT16)
+
+            def decode_16bit_uint(self):
+                return self._decode(ModbusBaseClient.DATATYPE.UINT16)
+
+            def decode_32bit_int(self):
+                return self._decode(ModbusBaseClient.DATATYPE.INT32, 2)
+
+            def decode_32bit_uint(self):
+                return self._decode(ModbusBaseClient.DATATYPE.UINT32, 2)
+
+            def decode_64bit_uint(self):
+                return self._decode(ModbusBaseClient.DATATYPE.UINT64, 4)
+
+            def decode_32bit_float(self):
+                return self._decode(ModbusBaseClient.DATATYPE.FLOAT32, 2)
+
+            def decode_string(self, size):
+                register_count = (size + 1) // 2
+                value = self._decode(ModbusBaseClient.DATATYPE.STRING, register_count)
+                return value.encode("utf-8")
+
+            def skip_bytes(self, count):
+                register_count = (count + 1) // 2
+                self._registers = self._registers[register_count:]
+
+        class BinaryPayloadBuilder:
+            def __init__(self, byteorder="big", wordorder="big"):
+                self._registers = []
+                self._wordorder = wordorder
+
+            def _add(self, value, data_type):
+                self._registers.extend(
+                    ModbusBaseClient.convert_to_registers(
+                        value,
+                        data_type,
+                        word_order=self._wordorder,
+                    )
+                )
+
+            def add_16bit_int(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.INT16)
+
+            def add_16bit_uint(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.UINT16)
+
+            def add_32bit_int(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.INT32)
+
+            def add_32bit_uint(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.UINT32)
+
+            def add_64bit_uint(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.UINT64)
+
+            def add_32bit_float(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.FLOAT32)
+
+            def add_string(self, value):
+                self._add(value, ModbusBaseClient.DATATYPE.STRING)
+
+            def to_registers(self):
+                return self._registers
+
+        payload_module = types.ModuleType("pymodbus.payload")
+        payload_module.BinaryPayloadDecoder = BinaryPayloadDecoder
+        payload_module.BinaryPayloadBuilder = BinaryPayloadBuilder
+        sys.modules["pymodbus.payload"] = payload_module
+
+    try:
+        import pymodbus.register_read_message
+    except ImportError:
+        from pymodbus.pdu.register_message import ReadHoldingRegistersResponse
+
+        register_read_message_module = types.ModuleType("pymodbus.register_read_message")
+        register_read_message_module.ReadHoldingRegistersResponse = ReadHoldingRegistersResponse
+        sys.modules["pymodbus.register_read_message"] = register_read_message_module
+
+    try:
+        from pymodbus.client import ModbusSerialClient, ModbusTcpClient
+    except ImportError:
+        return
+
+    if "pymodbus.client.sync" not in sys.modules:
+        try:
+            import pymodbus.client.sync  # noqa: F401  (still exists on some versions)
+        except ImportError:
+            sync_module = types.ModuleType("pymodbus.client.sync")
+            sync_module.ModbusTcpClient = ModbusTcpClient
+            sync_module.ModbusSerialClient = ModbusSerialClient
+            try:
+                from pymodbus.client import ModbusUdpClient
+                sync_module.ModbusUdpClient = ModbusUdpClient
+            except ImportError:
+                pass
+            sys.modules["pymodbus.client.sync"] = sync_module
+
+    def _wrap_read_holding_registers(original, uses_device_id):
+        def read_holding_registers(self, address, count=1, **kwargs):
+            if uses_device_id:
+                if "slave" in kwargs and "device_id" not in kwargs:
+                    kwargs["device_id"] = kwargs.pop("slave")
+                if "unit" in kwargs and "device_id" not in kwargs:
+                    kwargs["device_id"] = kwargs.pop("unit")
+                kwargs.pop("unit", None)
+                kwargs.pop("slave", None)
+                result = original(self, address, count=count, **kwargs)
+            else:
+                result = original(self, address, count, **kwargs)
+
+            try:
+                regs = getattr(result, "registers", None)
+                Domoticz.Debug(
+                    "pymodbus compat: read_holding_registers(address={}, count={}, kwargs={}) -> type={}, isError={}, registers_len={}".format(
+                        address, count, kwargs, type(result).__name__,
+                        result.isError() if hasattr(result, "isError") else "n/a",
+                        len(regs) if regs is not None else "n/a",
+                    )
+                )
+            except Exception:
+                pass
+
+            return result
+
+        return read_holding_registers
+
+    def _wrap_write_registers(original, uses_device_id):
+        def write_registers(self, address, values, **kwargs):
+            if uses_device_id:
+                if "slave" in kwargs and "device_id" not in kwargs:
+                    kwargs["device_id"] = kwargs.pop("slave")
+                if "unit" in kwargs and "device_id" not in kwargs:
+                    kwargs["device_id"] = kwargs.pop("unit")
+                kwargs.pop("unit", None)
+                kwargs.pop("slave", None)
+            return original(self, address, values, **kwargs)
+
+        return write_registers
+
+    for client_cls in (ModbusTcpClient, ModbusSerialClient):
+        if not getattr(client_cls, "_solaredge_legacy_api", False):
+            uses_device_id = "device_id" in inspect.signature(client_cls.read_holding_registers).parameters
+            client_cls.read_holding_registers = _wrap_read_holding_registers(
+                client_cls.read_holding_registers,
+                uses_device_id,
+            )
+            client_cls.write_registers = _wrap_write_registers(
+                client_cls.write_registers,
+                uses_device_id,
+            )
+            client_cls._solaredge_legacy_api = True
+
+    if not getattr(ModbusSerialClient, "_solaredge_legacy_init", False):
+        original_serial_init = ModbusSerialClient.__init__
+        accepts_method = "method" in inspect.signature(original_serial_init).parameters
+
+        if not accepts_method:
+            def serial_init(self, *args, **kwargs):
+                kwargs.pop("method", None)
+                original_serial_init(self, *args, **kwargs)
+
+            ModbusSerialClient.__init__ = serial_init
+
+        ModbusSerialClient._solaredge_legacy_init = True
+
+
+_apply_pymodbus_legacy_compat()
+
+import solaredge_modbus
 
 #
 # Domoticz shows graphs with intervals of 5 minutes.
@@ -66,25 +327,32 @@ from pymodbus.exceptions import ConnectionException
 # The number of samples stored depends on the interval used to collect the value from the inverter itself.
 #
 
-class Average:
+class SlidingWindow:
 
     def __init__(self):
         self.samples = []
         self.max_samples = 30
 
-    def set_max_samples(self, max):
-        self.max_samples = max
+    def set_max_samples(self, count):
+        self.max_samples = count
         if self.max_samples < 1:
             self.max_samples = 1
 
-    def update(self, new_value, scale = 0):
+    def update(self, new_value, scale=0):
         self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
+        self.samples = self.samples[-self.max_samples:]
 
-        Domoticz.Debug("Average: {} - {} values".format(self.get(), len(self.samples)))
+        Domoticz.Debug("{}: {} - {} values".format(self.__class__.__name__, self.get(), len(self.samples)))
 
     def get(self):
+        raise NotImplementedError
+
+
+class Average(SlidingWindow):
+
+    def get(self):
+        if not self.samples:
+            return 0
         return sum(self.samples) / len(self.samples)
 
 #
@@ -95,25 +363,11 @@ class Average:
 # The number of samples stored depends on the interval used to collect the value from the inverter itself.
 #
 
-class Maximum:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        Domoticz.Debug("Maximum: {} - {} values".format(self.get(), len(self.samples)))
+class Maximum(SlidingWindow):
 
     def get(self):
+        if not self.samples:
+            return 0
         return max(self.samples)
 
 #
@@ -250,6 +504,10 @@ class BasePlugin:
 
         self.add_devices = False
 
+        # The Domoticz image ID for the SolarEdge icon.
+
+        self.imageID = 0
+
         # When there is an issue contacting the inverter, the plugin will retry after a certain retry delay.
         # The actual time after which the plugin will try again is stored in the retry after variable.
         # According to the documenation, the inverter may need up to 2 minutes to "reset".
@@ -263,18 +521,32 @@ class BasePlugin:
 
     def onStart(self):
 
-        self.add_devices = bool(Parameters["Mode1"])
+        self.add_devices = Parameters["Mode1"] == "Yes"
+
+        _IMAGE = "solaredge"
+        creating_new_icon = _IMAGE not in Images
+        Domoticz.Image(f"{_IMAGE}.zip").Create()
+
+        if _IMAGE in Images:
+            self.imageID = Images[_IMAGE].ID
+            if creating_new_icon:
+                Domoticz.Log("Icons created and loaded.")
+            else:
+                Domoticz.Log(f"Icons found in database (ImageID={self.imageID}).")
+        else:
+            Domoticz.Error(f"Unable to load icon pack '{_IMAGE}.zip'")
+
 
         # Domoticz will generate graphs showing an interval of 5 minutes.
         # Calculate the number of samples to store over a period of 5 minutes.
 
-        self.max_samples = 300 / int(Parameters["Mode2"])
+        self.max_samples = 300 // int(Parameters["Mode2"])
 
         # Now set the interval at which the information is collected accordingly.
 
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
-        if Parameters["Mode5"] == "Debug":
+        if "Mode5" in Parameters and Parameters["Mode5"] == "Debug":
             Domoticz.Debugging(1)
         else:
             Domoticz.Debugging(0)
@@ -289,7 +561,7 @@ class BasePlugin:
 
         self.inverter = solaredge_modbus.Inverter(
             host=Parameters["Address"],
-            port=Parameters["Port"],
+            port=int(Parameters["Port"]),
             timeout=5,
             unit=int(Parameters["Mode3"]) if Parameters["Mode3"] else 1
         )
@@ -314,16 +586,19 @@ class BasePlugin:
 
             inverter_values = None
             try:
-                inverter_values = self.inverter.read_all()
-            except ConnectionException:
+                inverter_values = self.readInverterValues()
+            except ConnectionException as e:
                 inverter_values = None
-                Domoticz.Debug("ConnectionException")
+                self._LOOKUP_TABLE = None
+                self.retryafter = datetime.now() + self.retrydelay
+                self.disconnectInverter()
+                Domoticz.Error("ConnectionException: {}; retrying after: {}".format(e, self.retryafter))
             else:
 
                 if inverter_values:
 
                     if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
-                        to_log = inverter_values
+                        to_log = dict(inverter_values)
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
                         Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
@@ -332,6 +607,7 @@ class BasePlugin:
 
                     updated = 0
                     device_count = 0
+                    missing_keys = []
 
                     # Now process each unit in the table.
 
@@ -349,7 +625,12 @@ class BasePlugin:
                                 Domoticz.Debug("-> looking up...")
 
                                 lookup_table = unit[Column.LOOKUP]
-                                to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
+                                try:
+                                    to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
+                                except KeyError as e:
+                                    to_lookup = -1
+                                    missing_keys.append(str(e))
+                                    continue #data is missing, skip this device
 
                                 if to_lookup >= 0 and to_lookup < len(lookup_table):
                                     value = lookup_table[to_lookup]
@@ -361,26 +642,38 @@ class BasePlugin:
                             elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
                                 Domoticz.Debug("-> calculating...")
                                 m = unit[Column.MATH]
-                                if unit[Column.MODBUSSCALE]:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
-                                else:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]])
+                                try:
+                                    if unit[Column.MODBUSSCALE]:
+                                        m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
+                                    else:
+                                        m.update(inverter_values[unit[Column.MODBUSNAME]])
 
-                                value = m.get()
-
+                                    value = m.get()
+                                except KeyError as e:
+                                    missing_keys.append(str(e))
+                                    continue
+                                    
                             # When there is no math object then just store the latest value.
                             # Some values from the inverter need to be scaled before they can be stored.
 
                             elif unit[Column.MODBUSSCALE]:
                                 Domoticz.Debug("-> scaling...")
                                 # we need to do some calculation here
-                                value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
+                                try:
+                                    value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
+                                except KeyError as e:
+                                    missing_keys.append(str(e))
+                                    continue
 
                             # Some values require no action but storing in Domoticz.
 
                             else:
                                 Domoticz.Debug("-> copying...")
-                                value = inverter_values[unit[Column.MODBUSNAME]]
+                                try:
+                                    value = inverter_values[unit[Column.MODBUSNAME]]
+                                except KeyError as e:
+                                    missing_keys.append(str(e))
+                                    continue
 
                             Domoticz.Debug("value = {}".format(value))
 
@@ -413,7 +706,16 @@ class BasePlugin:
                         else:
                             Domoticz.Debug("-> NOT found in Devices")
 
-                    Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
+                    if missing_keys:
+                        Domoticz.Error(
+                            "Inverter returned incomplete data; {} field(s) missing: {}. "
+                            "This can happen when the inverter is sleeping (e.g. at night) or when there is a communication issue.".format(
+                                len(missing_keys), ", ".join(missing_keys)
+                            )
+                        )
+
+                    if "Mode5" in Parameters and Parameters["Mode5"] == "Extra":
+                        Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
                 else:
                     Domoticz.Log("Inverter returned no information")
 
@@ -437,8 +739,8 @@ class BasePlugin:
             # Here we go...
             inverter_values = None
             try:
-                inverter_values = self.inverter.read_all()
-            except ConnectionException:
+                inverter_values = self.readInverterValues()
+            except ConnectionException as e:
 
                 # There are multiple reasons why this may fail.
                 # - Perhaps the ip address or port are incorrect.
@@ -449,14 +751,17 @@ class BasePlugin:
 
                 self.retryafter = datetime.now() + self.retrydelay
                 inverter_values = None
+                self.disconnectInverter()
 
-                Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {} ({})".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"], e))
                 Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                return
 
             else:
 
                 if inverter_values:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    Domoticz.Debug("inverter_values = '" +format(inverter_values)+"'")
 
                     inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                     Domoticz.Log("Inverter type: {}".format(inverter_type))
@@ -476,7 +781,7 @@ class BasePlugin:
                         # Set the number of samples on all the math objects.
 
                         for unit in self._LOOKUP_TABLE:
-                            if unit[Column.MATH]  and Parameters["Mode4"] == "math_enabled":
+                            if unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
                                 unit[Column.MATH].set_max_samples(self.max_samples)
 
 
@@ -519,17 +824,49 @@ class BasePlugin:
                                         Switchtype=unit[Column.SWITCHTYPE],
                                         Options=unit[Column.OPTIONS],
                                         Used=1,
+                                        Image=self.imageID
                                     ).Create()
                 else:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    self.retryafter = datetime.now() + self.retrydelay
                     Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                    Domoticz.Debug("inverter_values = '" +format(inverter_values)+"'")
         else:
             Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+
+    def readInverterValues(self):
+        try:
+            return self.inverter.read_all()
+        except ConnectionException as first_error:
+            Domoticz.Debug("ConnectionException during read_all; reconnecting once before retry: {}".format(first_error))
+            self.disconnectInverter()
+            try:
+                values = self.inverter.read_all()
+            except ConnectionException:
+                raise
+            else:
+                Domoticz.Log("Recovered Modbus TCP connection after reconnect.")
+                return values
+
+
+    #
+    # onStop is called by Domoticz when the plugin is stopped.
+    #
+
+    def onStop(self):
+        Domoticz.Debug("onStop")
+        self.disconnectInverter()
+
+    def disconnectInverter(self):
+        try:
+            if self.inverter and self.inverter.client:
+                self.inverter.client.close()
+        except Exception as e:
+            Domoticz.Debug("disconnectInverter: {}".format(e))
 
 
 #
 # Instantiate the plugin and register the supported callbacks.
-# Currently that is only onStart() and onHeartbeat()
 #
 
 global _plugin
@@ -538,6 +875,10 @@ _plugin = BasePlugin()
 def onStart():
     global _plugin
     _plugin.onStart()
+
+def onStop():
+    global _plugin
+    _plugin.onStop()
 
 def onHeartbeat():
     global _plugin
