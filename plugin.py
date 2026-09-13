@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.2" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
@@ -317,7 +317,7 @@ class BasePlugin:
                 inverter_values = self.inverter.read_all()
             except ConnectionException:
                 inverter_values = None
-                Domoticz.Debug("ConnectionException")
+                Domoticz.Error("ConnectionException")
             else:
 
                 if inverter_values:
@@ -349,7 +349,12 @@ class BasePlugin:
                                 Domoticz.Debug("-> looking up...")
 
                                 lookup_table = unit[Column.LOOKUP]
-                                to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
+                                try:
+                                    to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
+                                except KeyError as e:
+                                    to_lookup = -1
+                                    Domoticz.Error("missing data in modbus inverter_values: "+str(e))
+                                    return #data is missing, no point to continue for this device
 
                                 if to_lookup >= 0 and to_lookup < len(lookup_table):
                                     value = lookup_table[to_lookup]
@@ -361,26 +366,40 @@ class BasePlugin:
                             elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
                                 Domoticz.Debug("-> calculating...")
                                 m = unit[Column.MATH]
-                                if unit[Column.MODBUSSCALE]:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
-                                else:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]])
+                                try:
+                                    if unit[Column.MODBUSSCALE]:
+                                        m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
+                                    else:
+                                        m.update(inverter_values[unit[Column.MODBUSNAME]])
 
-                                value = m.get()
-
+                                    value = m.get()
+                                except KeyError as e:
+                                    value = "Key not found in inverter_values table: {}".format(inverter_values)
+                                    Domoticz.Error("missing data in modbus inverter_values: "+str(e))
+                                    return
+                                    
                             # When there is no math object then just store the latest value.
                             # Some values from the inverter need to be scaled before they can be stored.
 
                             elif unit[Column.MODBUSSCALE]:
                                 Domoticz.Debug("-> scaling...")
                                 # we need to do some calculation here
-                                value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
+                                try:
+                                    value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
+                                except KeyError as e:
+                                    Domoticz.Error("missing data in modbus inverter_values: "+str(e))
+                                    return
 
                             # Some values require no action but storing in Domoticz.
 
                             else:
                                 Domoticz.Debug("-> copying...")
-                                value = inverter_values[unit[Column.MODBUSNAME]]
+                                try:
+                                    value = inverter_values[unit[Column.MODBUSNAME]]
+                                except KeyError as e:
+                                    value = "Key not found in inverter_values table: {}".format(inverter_values)
+                                    Domoticz.Error("missing data in modbus inverter_values: "+str(e))
+                                    return
 
                             Domoticz.Debug("value = {}".format(value))
 
@@ -452,11 +471,13 @@ class BasePlugin:
 
                 Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                 Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                return
 
             else:
 
                 if inverter_values:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                    Domoticz.Debug("inverter_values = '" +format(inverter_values)+"'")
 
                     inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
                     Domoticz.Log("Inverter type: {}".format(inverter_type))
@@ -523,6 +544,7 @@ class BasePlugin:
                 else:
                     Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
                     Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                    Domoticz.Debug("inverter_values = '" +format(inverter_values)+"'")
         else:
             Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
 
