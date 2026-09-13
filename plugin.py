@@ -193,7 +193,21 @@ class BasePlugin:
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
         # Set the logging level
-        SetLogLevel(LogLevels(int(Parameters["Mode5"])))
+        # Version 1.x.x of the plugin used text values for Mode5 to define the logging level.
+        # Version 2.x.x of the plugin uses integer values for Mode5 to define the logging level.
+        # The following code will check if the user is using the old or new version and set the logging level accordingly.
+        # The old version will be removed in a future release.
+
+        if "Mode5" in Parameters:
+            match Parameters["Mode5"]:
+                case "Normal":
+                    SetLogLevel(LogLevels.NORMAL)
+                case "Extra":
+                    SetLogLevel(LogLevels.VERBOSE)
+                case "Debug":
+                    SetLogLevel(LogLevels.MAX)
+                case _:
+                    SetLogLevel(LogLevels(int(Parameters["Mode5"])))
 
         self.inverter_address = Parameters["Address"]
         self.inverter_port = Parameters["Port"]
