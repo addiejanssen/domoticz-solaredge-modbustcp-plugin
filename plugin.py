@@ -305,51 +305,56 @@ class BasePlugin:
                 if (unit[Column.ID] + offset) in Devices:
                     DomoLog(LogLevels.EXTRA, str(unit[Column.ID]) + "-> device available")
 
-                    # Get the value for this unit from the Inverter data
-                    value = self.getUnitValue(unit, inverter_data)
+                    if unit[Column.MODBUSNAME] in inverter_data.keys():
+                        DomoLog(LogLevels.EXTRA, str(unit[Column.MODBUSNAME]) + "-> found in inverter data")
 
-                    # Time to store the value in Domoticz.
-                    # Some devices require multiple values, in which case the plugin will combine those values.
-                    # Currently, there is only a need to prepend one value with another.
+                        # Get the value for this unit from the Inverter data
+                        value = self.getUnitValue(unit, inverter_data)
 
-                    if unit[Column.PREPEND_ROW]:
-                        DomoLog(LogLevels.MAX, "-> has prepend lookup row")
-                        prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
-                        DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
+                        # Time to store the value in Domoticz.
+                        # Some devices require multiple values, in which case the plugin will combine those values.
+                        # Currently, there is only a need to prepend one value with another.
 
-                        if unit[Column.PREPEND_MATH]:
-                            DomoLog(LogLevels.MAX, "-> has prepend math")
-                            m = unit[Column.PREPEND_MATH]
-                            prepend = m.get(prepend)
+                        if unit[Column.PREPEND_ROW]:
+                            DomoLog(LogLevels.MAX, "-> has prepend lookup row")
+                            prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
                             DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
 
-                        sValue = unit[Column.FORMAT].format(prepend, value)
+                            if unit[Column.PREPEND_MATH]:
+                                DomoLog(LogLevels.MAX, "-> has prepend math")
+                                m = unit[Column.PREPEND_MATH]
+                                prepend = m.get(prepend)
+                                DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
 
-                    elif unit[Column.APPEND_MATH]:
-                        DomoLog(LogLevels.MAX, "-> has append math")
-                        m = unit[Column.APPEND_MATH]
-                        append = m.get(0)
-                        DomoLog(LogLevels.MAX, "append = {}".format(append))
+                            sValue = unit[Column.FORMAT].format(prepend, value)
 
-                        sValue = unit[Column.FORMAT].format(value, append)
+                        elif unit[Column.APPEND_MATH]:
+                            DomoLog(LogLevels.MAX, "-> has append math")
+                            m = unit[Column.APPEND_MATH]
+                            append = m.get(0)
+                            DomoLog(LogLevels.MAX, "append = {}".format(append))
+
+                            sValue = unit[Column.FORMAT].format(value, append)
+
+                        else:
+                            DomoLog(LogLevels.MAX, "-> no prepend")
+                            sValue = unit[Column.FORMAT].format(value)
+
+                        DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
+
+                        # Only store the value in Domoticz when it has changed.
+                        # TODO:
+                        #   We should not store certain values when the inverter is sleeping.
+                        #   That results in a strange graph; it would be better just to skip it then.
+
+                        if sValue != Devices[unit[Column.ID] + offset].sValue:
+                            Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
+                            updated += 1
+
+                        device_count += 1
 
                     else:
-                        DomoLog(LogLevels.MAX, "-> no prepend")
-                        sValue = unit[Column.FORMAT].format(value)
-
-                    DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
-
-                    # Only store the value in Domoticz when it has changed.
-                    # TODO:
-                    #   We should not store certain values when the inverter is sleeping.
-                    #   That results in a strange graph; it would be better just to skip it then.
-
-                    if sValue != Devices[unit[Column.ID] + offset].sValue:
-                        Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
-                        updated += 1
-
-                    device_count += 1
-
+                        DomoLog(LogLevels.EXTRA, str(unit[Column.MODBUSNAME]) + "-> not found in inverter data")
                 else:
                     DomoLog(LogLevels.MAX, str(unit[Column.ID]) + "-> skipping device not available")
 
