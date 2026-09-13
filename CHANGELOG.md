@@ -2,6 +2,17 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [2.0.5] - 2026-09-13
+
+This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
+
+### Changed
+
+- Check keys in device details and response from inverter to prevent key missing errors.
+- Recognize v1.x.x Mode4 (math toggle) parameter values.
+- Recognize v1.x.x Mode5 (log level) parameter values.
+- Updated the requirements to the latest supported versions of solaredge_modbus and pymodbus.
+
 ## [2.0.4] - 2023-07-23
 
 This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
