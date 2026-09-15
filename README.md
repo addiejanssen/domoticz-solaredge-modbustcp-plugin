@@ -2,10 +2,7 @@
 
 As the name already suggests: this is a [Domoticz](https://domoticz.com) plugin to **read data** over the local network from a [SolarEdge](https://solaredge.com) inverter using the [Modbus protocol](https://modbus.org) protocol.
 
-
-The version 1.1.1 of the plugin reads data from the SolarEdge inverter itself.
-
-The upcoming 2.x.x version also read data of batteries and meters attached to the SolarEdge inverter.
+The plugin reads data of the inverter itself and (when applicable) meters and batteries attached to the SolarEdge inverter.
 
 ## Getting started
 

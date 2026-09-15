@@ -9,41 +9,55 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="1.1.1" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.5" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
-        <param field="Port" label="Inverter Port Number" width="100px" required="true" default="502" />
-        <param field="Mode3" label="Inverter Modbus device address" width="100px" required="true" default="1" />
-        <param field="Mode1" label="Add missing devices" width="100px" required="true" default="Yes" >
+        <param field="Port" label="Inverter Port Number" width="150px" required="true" default="502" />
+        <param field="Mode3" label="Inverter Modbus device address" width="150px" required="true" default="1" />
+
+        <param field="Mode6" label="Hardware components" width="150px" required="true" default="0" >
+            <options>
+                <option label="Inverter"                  value="0" default="true" />
+                <option label="Inverter+Meters"           value="1"                />
+                <option label="Inverter+Batteries"        value="2"                />
+                <option label="Inverter+Meters+Batteries" value="3"                />
+            </options>
+        </param>
+
+        <param field="Mode1" label="Add missing devices" width="150px" required="true" default="Yes" >
             <options>
                 <option label="Yes" value="Yes" default="true" />
-                <option label="No" value="No" />
+                <option label="No"  value="No"                 />
             </options>
         </param>
-        <param field="Mode2" label="Interval" width="100px" required="true" default="5" >
+
+        <param field="Mode2" label="Interval" width="150px" required="true" default="5" >
             <options>
-                <option label="1  second"  value="1" />
-                <option label="2  seconds" value="2" />
-                <option label="3  seconds" value="3" />
-                <option label="4  seconds" value="4" />
+                <option label="1  second"  value="1"                />
+                <option label="2  seconds" value="2"                />
+                <option label="3  seconds" value="3"                />
+                <option label="4  seconds" value="4"                />
                 <option label="5  seconds" value="5" default="true" />
-                <option label="10 seconds" value="10" />
-                <option label="20 seconds" value="20" />
-                <option label="30 seconds" value="30" />
-                <option label="60 seconds" value="60" />
+                <option label="10 seconds" value="10"               />
+                <option label="20 seconds" value="20"               />
+                <option label="30 seconds" value="30"               />
+                <option label="60 seconds" value="60"               />
             </options>
         </param>
-        <param field="Mode4" label="Auto Avg/Max math" width="100px">
+
+        <param field="Mode4" label="Auto Avg/Max math" width="150px">
             <options>
-                <option label="Enabled" value="math_enabled" default="true" />
-                <option label="Disabled" value="math_disabled"/>
+                <option label="Enabled"  value="Yes" default="true" />
+                <option label="Disabled" value="No"                 />
             </options>
         </param>
-        <param field="Mode5" label="Log level" width="100px">
+
+        <param field="Mode5" label="Log level" width="150px">
             <options>
-                <option label="Normal" value="Normal" default="true" />
-                <option label="Extra" value="Extra"/>
-                <option label="Debug" value="Debug"/>
+                <option label="Normal"    value="0" default="true" />
+                <option label="Verbose"   value="1"                />
+                <option label="Verbose+"  value="2"                />
+                <option label="Verbose++" value="3"                />
             </options>
         </param>
     </params>
@@ -54,100 +68,14 @@ import Domoticz
 import solaredge_modbus
 import json
 
+import inverters
+import meters
+import batteries
+
+from helpers import DomoLog, LogLevels, SetLogLevel
 from datetime import datetime, timedelta
-from enum import IntEnum, unique, auto
+from enum import IntEnum, unique
 from pymodbus.exceptions import ConnectionException
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Average class can be used to calculate the average value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Average:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        Domoticz.Debug("Average: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return sum(self.samples) / len(self.samples)
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Maximum class can be used to calculate the highest value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Maximum:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        Domoticz.Debug("Maximum: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return max(self.samples)
-
-#
-# The Unit class lists all possible pieces of information that can be retrieved from the inverter.
-#
-# Not all inverters will support all these options.
-# The class is used to generate a unique id for each device in Domoticz.
-#
-
-@unique
-class Unit(IntEnum):
-
-    STATUS          = 1
-    VENDOR_STATUS   = 2
-    CURRENT         = 3
-    L1_CURRENT      = 4
-    L2_CURRENT      = 5
-    L3_CURRENT      = 6
-    L1_VOLTAGE      = 7
-    L2_VOLTAGE      = 8
-    L3_VOLTAGE      = 9
-    L1N_VOLTAGE     = 10
-    L2N_VOLTAGE     = 11
-    L3N_VOLTAGE     = 12
-    POWER_AC        = 13
-    FREQUENCY       = 14
-    POWER_APPARENT  = 15
-    POWER_REACTIVE  = 16
-    POWER_FACTOR    = 17
-    ENERGY_TOTAL    = 18
-    CURRENT_DC      = 19
-    VOLTAGE_DC      = 20
-    POWER_DC        = 21
-    TEMPERATURE     = 22
 
 #
 # The plugin is using a few tables to setup Domoticz and to process the feedback from the inverter.
@@ -166,63 +94,12 @@ class Column(IntEnum):
     MODBUSNAME      = 6
     MODBUSSCALE     = 7
     FORMAT          = 8
-    PREPEND         = 9
-    LOOKUP          = 10
-    MATH            = 11
+    PREPEND_ROW     = 9
+    PREPEND_MATH    = 10
+    APPEND_MATH     = 11
+    LOOKUP          = 12
+    MATH            = 13
 
-#
-# This table represents a single phase inverter.
-#
-
-SINGLE_PHASE_INVERTER = [
-#   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  None      ],
-    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
-]
-
-#
-# This table represents a three phase inverter.
-#
-
-THREE_PHASE_INVERTER = [
-#   ID,                    NAME,                TYPE,  SUBTYPE,  SWITCHTYPE, OPTIONS,                MODBUSNAME,        MODBUSSCALE,            FORMAT,    PREPEND,        LOOKUP,                                MATH
-    [Unit.STATUS,          "Status",            0xF3,  0x13,     0x00,       {},                     "status",          None,                   "{}",      None,           solaredge_modbus.INVERTER_STATUS_MAP,  None      ],
-    [Unit.VENDOR_STATUS,   "Vendor Status",     0xF3,  0x13,     0x00,       {},                     "vendor_status",   None,                   "{}",      None,           None,                                  None      ],
-    [Unit.CURRENT,         "Current",           0xF3,  0x17,     0x00,       {},                     "current",         "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_CURRENT,      "L1 Current",        0xF3,  0x17,     0x00,       {},                     "l1_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2_CURRENT,      "L2 Current",        0xF3,  0x17,     0x00,       {},                     "l2_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3_CURRENT,      "L3 Current",        0xF3,  0x17,     0x00,       {},                     "l3_current",      "current_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1_VOLTAGE,      "L1 Voltage",        0xF3,  0x08,     0x00,       {},                     "l1_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2_VOLTAGE,      "L2 Voltage",        0xF3,  0x08,     0x00,       {},                     "l2_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3_VOLTAGE,      "L3 Voltage",        0xF3,  0x08,     0x00,       {},                     "l3_voltage",      "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L1N_VOLTAGE,     "L1-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l1n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L2N_VOLTAGE,     "L2-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l2n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.L3N_VOLTAGE,     "L3-N Voltage",      0xF3,  0x08,     0x00,       {},                     "l3n_voltage",     "voltage_scale",        "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_AC,        "Power",             0xF8,  0x01,     0x00,       {},                     "power_ac",        "power_ac_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.FREQUENCY,       "Frequency",         0xF3,  0x1F,     0x00,       { "Custom": "1;Hz"  },  "frequency",       "frequency_scale",      "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_APPARENT,  "Power (Apparent)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VA"  },  "power_apparent",  "power_apparent_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_REACTIVE,  "Power (Reactive)",  0xF3,  0x1F,     0x00,       { "Custom": "1;VAr" },  "power_reactive",  "power_reactive_scale", "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_FACTOR,    "Power Factor",      0xF3,  0x06,     0x00,       {},                     "power_factor",    "power_factor_scale",   "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.ENERGY_TOTAL,    "Total Energy",      0xF3,  0x1D,     0x04,       {},                     "energy_total",    "energy_total_scale",   "{};{}",   Unit.POWER_AC,  None,                                  None      ],
-    [Unit.CURRENT_DC,      "DC Current",        0xF3,  0x17,     0x00,       {},                     "current_dc",      "current_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.VOLTAGE_DC,      "DC Voltage",        0xF3,  0x08,     0x00,       {},                     "voltage_dc",      "voltage_dc_scale",     "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.POWER_DC,        "DC Power",          0xF8,  0x01,     0x00,       {},                     "power_dc",        "power_dc_scale",       "{:.2f}",  None,           None,                                  Average() ],
-    [Unit.TEMPERATURE,     "Temperature",       0xF3,  0x05,     0x00,       {},                     "temperature",     "temperature_scale",    "{:.2f}",  None,           None,                                  Maximum() ]
-]
 
 #
 # The BasePlugin is the actual Domoticz plugin.
@@ -233,22 +110,39 @@ class BasePlugin:
 
     def __init__(self):
 
-        # The _LOOKUP_TABLE will point to one of the tables above, depending on the type of inverter.
+        # The device dictionary will hold an entry for the inverter and each meter and battery (if applicable)
+        # For each device, it will mention a name, the actual lookup table and a device index offset
 
-        self._LOOKUP_TABLE = None
+        self.device_dictionary = {}
 
         # This is the solaredge_modbus Inverter object that will be used to communicate with the inverter.
 
         self.inverter = None
+        self.inverter_address = None
+        self.inverter_port = None
+        self.inverter_unit = None
 
         # Default heartbeat is 10 seconds; therefore 30 samples in 5 minutes.
 
         self.max_samples = 30
 
+        # Whether we should scan for meters and/or batteries
+
+        self.scan_for_meters = False
+        self.scan_for_batteries = False
+
         # Whether the plugin should add missing devices.
         # If set to True, a deleted device will be added on the next restart of Domoticz.
 
         self.add_devices = False
+
+        # The inverter, meter and battery tables provide an option to calculate
+        # averages or maximum values. This is used to have nice graphs in Domoticz.
+        # Some users don't want that; they want to have the actual values and store
+        # them (via Domoticz) in external databases or use them in scripts.
+        # If set to True, then the math is enabled otherwise we just passthrough
+
+        self.do_math = True
 
         # When there is an issue contacting the inverter, the plugin will retry after a certain retry delay.
         # The actual time after which the plugin will try again is stored in the retry after variable.
@@ -262,41 +156,72 @@ class BasePlugin:
     #
 
     def onStart(self):
+        DomoLog(LogLevels.EXTRA, "Entered onStart()")
 
-        self.add_devices = bool(Parameters["Mode1"])
+        # Get the choices of the user and turn them into something we can use
+
+        # Mode 6 defines which hardware components we should scan for
+        components = int(Parameters["Mode6"]) if Parameters["Mode6"] else 0
+        if components == 1:
+            self.scan_for_meters = True
+        elif components == 2:
+            self.scan_for_batteries = True
+        elif components == 3:
+            self.scan_for_meters = True
+            self.scan_for_batteries = True
+        else:
+            self.scan_for_meters = False
+            self.scan_for_batteries = False
+
+        # Mode 1 defines if we should add missing devices or not
+        if Parameters["Mode1"] == "Yes":
+            self.add_devices = True
+        else:
+            self.add_devices = False
+
+        # Mode 4 defines if we should do math or not
+        # Version 1.x.x of the plugin used "math_enabled" and "math_disabled" to define the math setting.
+        # Version 2.x.x of the plugin uses "Yes" and "No" to define the math setting.
+        # The following code will check if the user is using the old or new version and set the math setting accordingly.
+        # The old version will be removed in a future release.
+        
+        if Parameters["Mode4"] == "Yes" or Parameters["Mode4"] == "math_enabled":
+            self.do_math = True
+        else:
+            self.do_math = False
 
         # Domoticz will generate graphs showing an interval of 5 minutes.
         # Calculate the number of samples to store over a period of 5 minutes.
-
         self.max_samples = 300 / int(Parameters["Mode2"])
 
         # Now set the interval at which the information is collected accordingly.
-
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
-        if Parameters["Mode5"] == "Debug":
-            Domoticz.Debugging(1)
-        else:
-            Domoticz.Debugging(0)
+        # Set the logging level
+        # Version 1.x.x of the plugin used text values for Mode5 to define the logging level.
+        # Version 2.x.x of the plugin uses integer values for Mode5 to define the logging level.
+        # The following code will check if the user is using the old or new version and set the logging level accordingly.
+        # The old version will be removed in a future release.
 
-        Domoticz.Debug(
-            "onStart Address: {} Port: {} Device Address: {}".format(
-                Parameters["Address"],
-                Parameters["Port"],
-                Parameters["Mode3"]
-            )
-        )
+        if "Mode5" in Parameters:
+            match Parameters["Mode5"]:
+                case "Normal":
+                    SetLogLevel(LogLevels.NORMAL)
+                case "Extra":
+                    SetLogLevel(LogLevels.VERBOSE)
+                case "Debug":
+                    SetLogLevel(LogLevels.MAX)
+                case _:
+                    SetLogLevel(LogLevels(int(Parameters["Mode5"])))
 
-        self.inverter = solaredge_modbus.Inverter(
-            host=Parameters["Address"],
-            port=Parameters["Port"],
-            timeout=5,
-            unit=int(Parameters["Mode3"]) if Parameters["Mode3"] else 1
-        )
+        self.inverter_address = Parameters["Address"]
+        self.inverter_port = Parameters["Port"]
+        self.inverter_unit = int(Parameters["Mode3"]) if Parameters["Mode3"] else 1
 
         # Lets get in touch with the inverter.
+        self.connectToInverter()
 
-        self.contactInverter()
+        DomoLog(LogLevels.EXTRA, "Leaving onStart()")
 
 
     #
@@ -304,228 +229,468 @@ class BasePlugin:
     #
 
     def onHeartbeat(self):
-        Domoticz.Debug("onHeartbeat")
+        DomoLog(LogLevels.EXTRA, "Entered onHeartbeat()")
 
-        # We need to make sure that we have a table to work with.
-        # This will be set by contactInverter and will be None till it is clear
-        # that the inverter responds and that a matching table is available.
+        if self.inverter and self.inverter.connected():
 
-        if self._LOOKUP_TABLE:
+            for device_name, device_details in self.device_dictionary.items():
 
-            inverter_values = None
-            try:
-                inverter_values = self.inverter.read_all()
-            except ConnectionException:
-                inverter_values = None
-                Domoticz.Debug("ConnectionException")
-            else:
+                if device_details["table"]:
 
-                if inverter_values:
+                    values = None
 
-                    if "Mode5" in Parameters and (Parameters["Mode5"] == "Extra" or Parameters["Mode5"] == "Debug"):
-                        to_log = inverter_values
+                    if device_details["type"] == "inverter":
+                        try:
+                            values = self.inverter.read_all()
+                        except ConnectionException:
+                            values = None
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+
+                    elif device_details["type"] == "meter":
+                        try:
+                            meter = self.inverter.meters()[device_name]
+                            values = meter.read_all()
+                        except ConnectionException:
+                            values = None
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+
+                    elif device_details["type"] == "battery":
+                        try:
+                            battery = self.inverter.batteries()[device_name]
+                            values = battery.read_all()
+                        except ConnectionException:
+                            values = None
+                            DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+
+                    if values:
+                        DomoLog(LogLevels.NORMAL, "Inverter returned information for {}".format(device_name))
+                        to_log = values
                         if "c_serialnumber" in to_log:
                             to_log.pop("c_serialnumber")
-                        Domoticz.Log("inverter values: {}".format(json.dumps(to_log, indent=4, sort_keys=False)))
+                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(device_name, json.dumps(to_log, indent=4, sort_keys=False)))
 
-                    # Just for cosmetics in the log
-
-                    updated = 0
-                    device_count = 0
-
-                    # Now process each unit in the table.
-
-                    for unit in self._LOOKUP_TABLE:
-                        Domoticz.Debug(str(unit))
-
-                        # Skip a unit when the matching device got deleted.
-
-                        if unit[Column.ID] in Devices:
-                            Domoticz.Debug("-> found in Devices")
-
-                            # For certain units the table has a lookup table to replace the value with something else.
-
-                            if unit[Column.LOOKUP]:
-                                Domoticz.Debug("-> looking up...")
-
-                                lookup_table = unit[Column.LOOKUP]
-                                to_lookup = int(inverter_values[unit[Column.MODBUSNAME]])
-
-                                if to_lookup >= 0 and to_lookup < len(lookup_table):
-                                    value = lookup_table[to_lookup]
-                                else:
-                                    value = "Key not found in lookup table: {}".format(to_lookup)
-
-                            # When a math object is setup for the unit, update the samples in it and get the calculated value.
-
-                            elif unit[Column.MATH] and Parameters["Mode4"] == "math_enabled":
-                                Domoticz.Debug("-> calculating...")
-                                m = unit[Column.MATH]
-                                if unit[Column.MODBUSSCALE]:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]], inverter_values[unit[Column.MODBUSSCALE]])
-                                else:
-                                    m.update(inverter_values[unit[Column.MODBUSNAME]])
-
-                                value = m.get()
-
-                            # When there is no math object then just store the latest value.
-                            # Some values from the inverter need to be scaled before they can be stored.
-
-                            elif unit[Column.MODBUSSCALE]:
-                                Domoticz.Debug("-> scaling...")
-                                # we need to do some calculation here
-                                value = inverter_values[unit[Column.MODBUSNAME]] * (10 ** inverter_values[unit[Column.MODBUSSCALE]])
-
-                            # Some values require no action but storing in Domoticz.
-
-                            else:
-                                Domoticz.Debug("-> copying...")
-                                value = inverter_values[unit[Column.MODBUSNAME]]
-
-                            Domoticz.Debug("value = {}".format(value))
-
-                            # Time to store the value in Domoticz.
-                            # Some devices require multiple values, in which case the plugin will combine those values.
-                            # Currently, there is only a need to prepend one value with another.
-
-                            if unit[Column.PREPEND]:
-                                Domoticz.Debug("-> has prepend")
-                                prepend = Devices[unit[Column.PREPEND]].sValue
-                                Domoticz.Debug("prepend = {}".format(prepend))
-                                sValue = unit[Column.FORMAT].format(prepend, value)
-                            else:
-                                Domoticz.Debug("-> no prepend")
-                                sValue = unit[Column.FORMAT].format(value)
-
-                            Domoticz.Debug("sValue = {}".format(sValue))
-
-                            # Only store the value in Domoticz when it has changed.
-                            # TODO:
-                            #   We should not store certain values when the inverter is sleeping.
-                            #   That results in a strange graph; it would be better just to skip it then.
-
-                            if sValue != Devices[unit[Column.ID]].sValue:
-                                Devices[unit[Column.ID]].Update(nValue=0, sValue=str(sValue), TimedOut=0)
-                                updated += 1
-
-                            device_count += 1
-
-                        else:
-                            Domoticz.Debug("-> NOT found in Devices")
-
-                    Domoticz.Log("Updated {} values out of {}".format(updated, device_count))
-                else:
-                    Domoticz.Log("Inverter returned no information")
-
-        # Try to contact the inverter when the lookup table is not yet initialized.
+                        self.processValues(device_details, values)
+                    else:
+                        DomoLog(LogLevels.NORMAL, "Inverter returned no information for {}".format(device_name))
 
         else:
-            self.contactInverter()
+            self.connectToInverter()
+
+        DomoLog(LogLevels.EXTRA, "Leaving onHeartbeat()")
+
+    #
+    # Go through the table and update matching devices
+    # with the new values.
+    #
+
+    def processValues(self, device_details, inverter_data):
+
+        DomoLog(LogLevels.EXTRA, "Entered processValues()")
+
+        if device_details["table"]:
+            table = device_details["table"]
+            offset = device_details["offset"]
+
+            # Just for cosmetics in the log
+
+            updated = 0
+            device_count = 0
+
+            # Now process each unit in the table.
+
+            for unit in table:
+
+                # Skip a unit when the matching device got deleted.
+
+                if (unit[Column.ID] + offset) in Devices:
+                    DomoLog(LogLevels.EXTRA, str(unit[Column.ID]) + "-> device available")
+
+                    if unit[Column.MODBUSNAME] in inverter_data.keys():
+                        DomoLog(LogLevels.EXTRA, str(unit[Column.MODBUSNAME]) + "-> found in inverter data")
+
+                        # Get the value for this unit from the Inverter data
+                        value = self.getUnitValue(unit, inverter_data)
+
+                        # Time to store the value in Domoticz.
+                        # Some devices require multiple values, in which case the plugin will combine those values.
+                        # Currently, there is only a need to prepend one value with another.
+
+                        if unit[Column.PREPEND_ROW]:
+                            DomoLog(LogLevels.MAX, "-> has prepend lookup row")
+                            prepend = self.getUnitValue(table[unit[Column.PREPEND_ROW]], inverter_data)
+                            DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
+
+                            if unit[Column.PREPEND_MATH]:
+                                DomoLog(LogLevels.MAX, "-> has prepend math")
+                                m = unit[Column.PREPEND_MATH]
+                                prepend = m.get(prepend)
+                                DomoLog(LogLevels.MAX, "prepend = {}".format(prepend))
+
+                            sValue = unit[Column.FORMAT].format(prepend, value)
+
+                        elif unit[Column.APPEND_MATH]:
+                            DomoLog(LogLevels.MAX, "-> has append math")
+                            m = unit[Column.APPEND_MATH]
+                            append = m.get(0)
+                            DomoLog(LogLevels.MAX, "append = {}".format(append))
+
+                            sValue = unit[Column.FORMAT].format(value, append)
+
+                        else:
+                            DomoLog(LogLevels.MAX, "-> no prepend")
+                            sValue = unit[Column.FORMAT].format(value)
+
+                        DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
+
+                        # Only store the value in Domoticz when it has changed.
+                        # TODO:
+                        #   We should not store certain values when the inverter is sleeping.
+                        #   That results in a strange graph; it would be better just to skip it then.
+
+                        if sValue != Devices[unit[Column.ID] + offset].sValue:
+                            Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
+                            updated += 1
+
+                        device_count += 1
+
+                    else:
+                        DomoLog(LogLevels.EXTRA, str(unit[Column.MODBUSNAME]) + "-> not found in inverter data")
+                else:
+                    DomoLog(LogLevels.MAX, str(unit[Column.ID]) + "-> skipping device not available")
+
+            DomoLog(LogLevels.NORMAL, "Updated {} values out of {}".format(updated, device_count))
+
+        DomoLog(LogLevels.EXTRA, "Leaving processValues()")
+
+    #
+    # Get the value of a particular unit from the inverter_data
+    # and process it based on the information in the associated table.
+    #
+
+    def getUnitValue(self, row, inverter_data):
+
+        DomoLog(LogLevels.EXTRA, "Entered getUnitValue()")
+
+        # For certain units the table has a lookup table to replace the value with something else.
+        if row[Column.LOOKUP]:
+            DomoLog(LogLevels.MAX, "-> looking up...")
+
+            lookup_table = row[Column.LOOKUP]
+            to_lookup = int(inverter_data[row[Column.MODBUSNAME]])
+
+            if to_lookup >= 0 and to_lookup < len(lookup_table):
+                value = lookup_table[to_lookup]
+            else:
+                value = "Key not found in lookup table: {}".format(to_lookup)
+
+        # When a math object is setup for the unit, update the samples in it and get the calculated value.
+        elif row[Column.MATH] and self.do_math:
+            DomoLog(LogLevels.MAX, "-> calculating...")
+            m = row[Column.MATH]
+            if row[Column.MODBUSSCALE]:
+                m.update(inverter_data[row[Column.MODBUSNAME]], inverter_data[row[Column.MODBUSSCALE]])
+            else:
+                m.update(inverter_data[row[Column.MODBUSNAME]])
+
+            value = m.get()
+
+        # When there is no math object then just store the latest value.
+        # Some date from the inverter need to be scaled before they can be stored.
+        elif row[Column.MODBUSSCALE]:
+            DomoLog(LogLevels.MAX, "-> scaling...")
+            # we need to do some calculation here
+            value = inverter_data[row[Column.MODBUSNAME]] * (10 ** inverter_data[row[Column.MODBUSSCALE]])
+
+        # Some data require no action but storing in Domoticz.
+        else:
+            DomoLog(LogLevels.MAX, "-> copying...")
+            value = inverter_data[row[Column.MODBUSNAME]]
+
+        DomoLog(LogLevels.MAX, "value = {}".format(value))
+
+        DomoLog(LogLevels.EXTRA, "Leaving getUnitValue()")
+
+        return value
 
 
     #
-    # Contact the inverter and find out what type it is.
-    # Initialize the lookup table when the type is supported.
+    # Connect to the inverter and initialize the lookup tables.
     #
     
-    def contactInverter(self):
+    def connectToInverter(self):
+
+        DomoLog(LogLevels.EXTRA, "Entered connectToInverter()")
+
+        # Setup the inverter object if it doesn't exist yet
+
+        if (self.inverter == None):
+
+            # Let's go
+            DomoLog(LogLevels.MAX, 
+                "onStart Address: {} Port: {} Device Address: {}".format(
+                    self.inverter_address,
+                    self.inverter_port,
+                    self.inverter_unit
+                )
+            )
+
+            self.inverter = solaredge_modbus.Inverter(
+                host = self.inverter_address,
+                port = self.inverter_port,
+                timeout = 15,
+                unit = self.inverter_unit
+            )
 
         # Do not stress the inverter when it did not respond in the previous attempt to contact it.
 
-        if self.retryafter <= datetime.now():
+        if (self.inverter.connected() == False) and (self.retryafter <= datetime.now()):
 
-            # Here we go...
-            inverter_values = None
             try:
-                inverter_values = self.inverter.read_all()
+                self.inverter.connect()
+
             except ConnectionException:
 
                 # There are multiple reasons why this may fail.
                 # - Perhaps the ip address or port are incorrect.
-                # - The inverter may not be connected to the networ,
+                # - The inverter may not be connected to the network,
                 # - The inverter may be turned off.
                 # - The inverter has a bad hairday....
                 # Try again in the future.
 
+                self.inverter.disconnect()
                 self.retryafter = datetime.now() + self.retrydelay
-                inverter_values = None
 
-                Domoticz.Log("Connection Exception when trying to contact: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
-                Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                DomoLog(LogLevels.NORMAL, "Connection Exception when trying to connect to: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+                DomoLog(LogLevels.NORMAL, "Retrying to connect to inverter after: {}".format(self.retryafter))
 
             else:
+                DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
 
-                if inverter_values:
-                    Domoticz.Log("Connection established with: {}:{} Device Address: {}".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
+                # Let's get some values from the inverter and
+                # figure out the type of the inverter and
+                # meters and batteries if there are any
 
-                    inverter_type = solaredge_modbus.sunspecDID(inverter_values["c_sunspec_did"])
-                    Domoticz.Log("Inverter type: {}".format(inverter_type))
+                try:
+                    inverter_values = self.inverter.read_all()
 
-                    # The plugin currently has 2 supported types.
-                    # This may be updated in the future based on user feedback.
+                except ConnectionException:
+                    self.inverter.disconnect()
+                    self.retryafter = datetime.now() + self.retrydelay
 
-                    if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = SINGLE_PHASE_INVERTER
-                    elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
-                        self._LOOKUP_TABLE = THREE_PHASE_INVERTER
-                    else:
-                        Domoticz.Log("Unsupported inverter type: {}".format(inverter_type))
+                    DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+                    DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
-                    if self._LOOKUP_TABLE:
-
-                        # Set the number of samples on all the math objects.
-
-                        for unit in self._LOOKUP_TABLE:
-                            if unit[Column.MATH]  and Parameters["Mode4"] == "math_enabled":
-                                unit[Column.MATH].set_max_samples(self.max_samples)
-
-
-                        # We updated some device types over time.
-                        # Let's make sure that we have the correct type setup.
-
-                        for unit in self._LOOKUP_TABLE:
-                            if unit[Column.ID] in Devices:
-                                device = Devices[unit[Column.ID]]
-                                
-                                if (device.Type != unit[Column.TYPE] or
-                                    device.SubType != unit[Column.SUBTYPE] or
-                                    device.SwitchType != unit[Column.SWITCHTYPE] or
-                                    device.Options != unit[Column.OPTIONS]):
-
-                                    Domoticz.Log("Updating device \"{}\"".format(device.Name))
-
-                                    nValue = device.nValue
-                                    sValue = device.sValue
-
-                                    device.Update(
-                                            Type=unit[Column.TYPE],
-                                            Subtype=unit[Column.SUBTYPE],
-                                            Switchtype=unit[Column.SWITCHTYPE],
-                                            Options=unit[Column.OPTIONS],
-                                            nValue=nValue,
-                                            sValue=sValue
-                                    )
-
-                        # Add missing devices if needed.
-
-                        if self.add_devices:
-                            for unit in self._LOOKUP_TABLE:
-                                if unit[Column.ID] not in Devices:
-                                    Domoticz.Device(
-                                        Unit=unit[Column.ID],
-                                        Name=unit[Column.NAME],
-                                        Type=unit[Column.TYPE],
-                                        Subtype=unit[Column.SUBTYPE],
-                                        Switchtype=unit[Column.SWITCHTYPE],
-                                        Options=unit[Column.OPTIONS],
-                                        Used=1,
-                                    ).Create()
                 else:
-                    Domoticz.Log("Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(Parameters["Address"], Parameters["Port"], Parameters["Mode3"]))
-                    Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
-        else:
-            Domoticz.Log("Retrying to communicate with inverter after: {}".format(self.retryafter))
+                    if inverter_values:
+                        DomoLog(LogLevels.NORMAL, "Inverter returned information")
 
+                        to_log = inverter_values
+                        if "c_serialnumber" in to_log:
+                            to_log.pop("c_serialnumber")
+                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format("Inverter", json.dumps(to_log, indent=4, sort_keys=False)))
+
+                        known_sunspec_DIDS = set(item.value for item in solaredge_modbus.sunspecDID)
+
+                        device_offset = 0
+                        details = {
+                            "type": "inverter",
+                            "offset": device_offset,
+                            "table": None
+                        }
+
+                        inverter_type = None
+                        c_sunspec_did = inverter_values["c_sunspec_did"]
+                        if c_sunspec_did in known_sunspec_DIDS:
+                            inverter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                            DomoLog(LogLevels.NORMAL, "Inverter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(inverter_type.value)]))
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Unknown inverter type: {}".format(c_sunspec_did))
+
+                        if inverter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_INVERTER:
+                            details.update({"table": inverters.SINGLE_PHASE_INVERTER})
+                        elif inverter_type == solaredge_modbus.sunspecDID.THREE_PHASE_INVERTER:
+                            details.update({"table": inverters.THREE_PHASE_INVERTER})
+                        else:
+                            details.update({"table": inverters.OTHER_INVERTER})
+
+                        self.device_dictionary["Inverter"] = details
+                        self.addUpdateDevices("Inverter")
+
+                        # Scan for meters if required
+                        if self.scan_for_meters:
+                            DomoLog(LogLevels.NORMAL, "Scanning for meters")
+
+                            device_offset = max(inverters.InverterUnit)
+                            all_meters = self.inverter.meters()
+                            if all_meters:
+                                DomoLog(LogLevels.NORMAL, "Found at least one meter")
+
+                                for meter, params in all_meters.items():
+                                    meter_values = params.read_all()
+
+                                    if meter_values:
+                                        DomoLog(LogLevels.NORMAL, "Inverter returned meter information")
+
+                                        to_log = meter_values
+                                        if "c_serialnumber" in to_log:
+                                            to_log.pop("c_serialnumber")
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(meter, json.dumps(to_log, indent=4, sort_keys=False)))
+
+                                        details = {
+                                            "type": "meter",
+                                            "offset": device_offset,
+                                            "table": None
+                                        }
+                                        device_offset = device_offset + max(meters.MeterUnit)
+
+                                        meter_type = None
+                                        c_sunspec_did = meter_values["c_sunspec_did"]
+                                        if c_sunspec_did in known_sunspec_DIDS:
+                                            meter_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                            DomoLog(LogLevels.NORMAL, "Meter type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(meter_type.value)]))
+                                        else:
+                                            DomoLog(LogLevels.NORMAL, "Unknown meter type: {}".format(c_sunspec_did))
+
+                                        if meter_type == solaredge_modbus.sunspecDID.SINGLE_PHASE_METER:
+                                            details.update({"table": meters.SINGLE_PHASE_METER})
+                                        elif meter_type == solaredge_modbus.sunspecDID.WYE_THREE_PHASE_METER:
+                                            details.update({"table": meters.WYE_THREE_PHASE_METER})
+                                        else:
+                                            details.update({"table": meters.OTHER_METER})
+
+                                        self.device_dictionary[meter] = details
+                                        self.addUpdateDevices(meter)
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Found {}. BUT... inverter didn't return information".format(meter))
+                            else:
+                                DomoLog(LogLevels.NORMAL, "No meters found")
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Skip scanning for meters")
+                        # End scan for meters
+
+                        # Scan for batteries if required
+                        if self.scan_for_batteries:
+                            DomoLog(LogLevels.NORMAL, "Scanning for batteries")
+
+                            device_offset = max(inverters.InverterUnit) + (3 * max(meters.MeterUnit))
+                            all_batteries = self.inverter.batteries()
+                            if all_batteries:
+                                DomoLog(LogLevels.NORMAL, "Found at least one battery")
+
+                                for battery, params in all_batteries.items():
+                                    battery_values = params.read_all()
+
+                                    if battery_values:
+                                        DomoLog(LogLevels.NORMAL, "Inverter returned battery information")
+
+                                        to_log = battery_values
+                                        if "c_serialnumber" in to_log:
+                                            to_log.pop("c_serialnumber")
+                                        DomoLog(LogLevels.VERBOSE, "device: {} values: {}".format(battery, json.dumps(to_log, indent=4, sort_keys=False)))
+
+                                        details = {
+                                            "type": "battery",
+                                            "offset": device_offset,
+                                            "table": None
+                                        }
+                                        device_offset = device_offset + max(batteries.BatteryUnit)
+
+                                        battery_type = None
+                                        c_sunspec_did = battery_values["c_sunspec_did"]
+                                        if c_sunspec_did in known_sunspec_DIDS:
+                                            battery_type = solaredge_modbus.sunspecDID(c_sunspec_did)
+                                            DomoLog(LogLevels.NORMAL, "Battery type: {}".format(solaredge_modbus.C_SUNSPEC_DID_MAP[str(battery_type.value)]))
+                                        else:
+                                            DomoLog(LogLevels.NORMAL, "Unknown battery type: {}".format(c_sunspec_did))
+
+                                        details.update({"table": batteries.OTHER_BATTERY})
+
+                                        self.device_dictionary[battery] = details
+                                        self.addUpdateDevices(battery)
+                                    else:
+                                        DomoLog(LogLevels.NORMAL, "Found {}. BUT... inverter didn't return information".format(battery))
+                            else:
+                                DomoLog(LogLevels.NORMAL, "No batteries found")
+                        else:
+                            DomoLog(LogLevels.NORMAL, "Skip scanning for batteries")
+                        # End scan for batteries
+
+                    else:
+                        self.inverter.disconnect()
+                        self.retryafter = datetime.now() + self.retrydelay
+
+                        DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+                        DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
+        else:
+            DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
+
+        DomoLog(LogLevels.EXTRA, "Leaving connectToInverter()")
+
+    #
+    # Go through the table and update matching devices
+    # with the new values.
+    #
+    
+    def addUpdateDevices(self, device_name):
+
+        DomoLog(LogLevels.EXTRA, "Entered addUpdateDevices()")
+
+        if self.device_dictionary[device_name] and self.device_dictionary[device_name]["table"]:
+
+            table = self.device_dictionary[device_name]["table"]
+            offset = self.device_dictionary[device_name]["offset"]
+            prepend_name = device_name + " - "
+
+            # Set the number of samples on all the math objects.
+
+            for unit in table:
+                if unit[Column.MATH]  and self.do_math:
+                    unit[Column.MATH].set_max_samples(self.max_samples)
+
+            # We updated some device types over time.
+            # Let's make sure that we have the correct type setup.
+
+            for unit in table:
+                if (unit[Column.ID] + offset) in Devices:
+                    device = Devices[unit[Column.ID] + offset]
+                    if (device.Type != unit[Column.TYPE] or
+                        device.SubType != unit[Column.SUBTYPE] or
+                        device.SwitchType != unit[Column.SWITCHTYPE] or
+                        device.Options != unit[Column.OPTIONS]):
+
+                        DomoLog(LogLevels.NORMAL, "Updating device \"{}\"".format(device.Name))
+
+                        nValue = device.nValue
+                        sValue = device.sValue
+
+                        device.Update(
+                                Type=unit[Column.TYPE],
+                                Subtype=unit[Column.SUBTYPE],
+                                Switchtype=unit[Column.SWITCHTYPE],
+                                Options=unit[Column.OPTIONS],
+                                nValue=nValue,
+                                sValue=sValue
+                        )
+
+            # Add missing devices if needed.
+
+            if self.add_devices:
+                for unit in table:
+                    if (unit[Column.ID] + offset) not in Devices:
+
+                        DomoLog(LogLevels.NORMAL, "Adding device \"{}\"".format(prepend_name + unit[Column.NAME]))
+
+                        Domoticz.Device(
+                            Unit=unit[Column.ID] + offset,
+                            Name=prepend_name + unit[Column.NAME],
+                            Type=unit[Column.TYPE],
+                            Subtype=unit[Column.SUBTYPE],
+                            Switchtype=unit[Column.SWITCHTYPE],
+                            Options=unit[Column.OPTIONS],
+                            Used=1,
+                        ).Create()
+
+        DomoLog(LogLevels.EXTRA, "Leaving addUpdateDevices()")
 
 #
 # Instantiate the plugin and register the supported callbacks.
