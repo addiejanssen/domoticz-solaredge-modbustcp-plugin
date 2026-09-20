@@ -2,6 +2,36 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [2.0.6] - 2026-09-20
+
+This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
+
+The focus of this release is fixing issues and making the plugin more robust.
+
+### Added
+
+- Added disconnect from the inverter when Domoticz is stopping the plugin.
+
+### Changed
+
+- Restructured the repository. Code has moved into the `src` folder.
+- The `helpers.py` code has been cleaned up.
+- The Average() and Maximum() classes stored their samples in a fixed size list.
+  As a result, the calculation could use values that were very old; for example
+  the last value of one day and the first value of the following day.
+  This has been changed into a list of timestamp/sample tuples allowing us to
+  expire samples based on the timestamp.
+
+### Fixed
+
+- Some graphs showed long slopes for particular values.
+  The plugin would not update values when the new value was the same as the previous value.
+  Thanks goes out to [CreasolTech](https://github.com/CreasolTech) for coming up with the solution.
+  We now force storing the value at least once every 5 minutes.
+- The inverter may not always return information of meters or batteries.
+  This would result in key errors.
+  Added a check if information is available; if not, a message is logged.
+
 ## [2.0.5] - 2026-09-13
 
 This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.

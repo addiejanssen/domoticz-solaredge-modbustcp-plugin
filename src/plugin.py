@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.5" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.6" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="150px" required="true" default="502" />
@@ -122,10 +122,6 @@ class BasePlugin:
         self.inverter_port = None
         self.inverter_unit = None
 
-        # Default heartbeat is 10 seconds; therefore 30 samples in 5 minutes.
-
-        self.max_samples = 30
-
         # Whether we should scan for meters and/or batteries
 
         self.scan_for_meters = False
@@ -190,10 +186,6 @@ class BasePlugin:
         else:
             self.do_math = False
 
-        # Domoticz will generate graphs showing an interval of 5 minutes.
-        # Calculate the number of samples to store over a period of 5 minutes.
-        self.max_samples = 300 / int(Parameters["Mode2"])
-
         # Now set the interval at which the information is collected accordingly.
         Domoticz.Heartbeat(int(Parameters["Mode2"]))
 
@@ -225,6 +217,20 @@ class BasePlugin:
 
 
     #
+    # onStop is called by Domoticz to stop the processing of the plugin.
+    #
+
+    def onStop(self):
+        DomoLog(LogLevels.EXTRA, "Entered onStop()")
+
+        if self.inverter and self.inverter.connected():
+            self.inverter.disconnect()
+            DomoLog(LogLevels.NORMAL, "Disconnected from: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+            self.inverter = None
+
+        DomoLog(LogLevels.EXTRA, "Leaving onStop()")
+
+    #
     # OnHeartbeat is called by Domoticz at a specific interval as set in onStart()
     #
 
@@ -248,16 +254,22 @@ class BasePlugin:
 
                     elif device_details["type"] == "meter":
                         try:
-                            meter = self.inverter.meters()[device_name]
-                            values = meter.read_all()
+                            if device_name in self.inverter.meters():
+                                meter = self.inverter.meters()[device_name]
+                                values = meter.read_all()
+                            else:
+                                DomoLog(LogLevels.NORMAL, f"Skipping {device_name} as inverter did not return information for it")
                         except ConnectionException:
                             values = None
                             DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
 
                     elif device_details["type"] == "battery":
                         try:
-                            battery = self.inverter.batteries()[device_name]
-                            values = battery.read_all()
+                            if device_name in self.inverter.batteries():
+                                battery = self.inverter.batteries()[device_name]
+                                values = battery.read_all()
+                            else:
+                                DomoLog(LogLevels.NORMAL, f"Skipping {device_name} as inverter did not return information for it")
                         except ConnectionException:
                             values = None
                             DomoLog(LogLevels.NORMAL, "Connection Exception when trying to communicate with: {}:{} Device Address: {}".format(self.inverter_address, self.inverter_port, self.inverter_unit))
@@ -296,7 +308,8 @@ class BasePlugin:
             updated = 0
             device_count = 0
 
-            # Now process each unit in the table.
+            # Process each unit in the table.
+            now: datetime = datetime.now()
 
             for unit in table:
 
@@ -342,12 +355,12 @@ class BasePlugin:
 
                         DomoLog(LogLevels.EXTRA, "sValue = {}".format(sValue))
 
-                        # Only store the value in Domoticz when it has changed.
-                        # TODO:
-                        #   We should not store certain values when the inverter is sleeping.
-                        #   That results in a strange graph; it would be better just to skip it then.
+                        # Update value to Domoticz if it changed or
+                        # if not updated in the last 5 minutes to prevent long slopes in graphs
+                        # when the value is constant for a long time.
 
-                        if sValue != Devices[unit[Column.ID] + offset].sValue:
+                        last_update: datetime = datetime.strptime(Devices[unit[Column.ID]].LastUpdate, "%Y-%m-%d %H:%M:%S")
+                        if sValue != Devices[unit[Column.ID] + offset].sValue or (now - last_update) >= timedelta(minutes=5):
                             Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
                             updated += 1
 
@@ -481,7 +494,7 @@ class BasePlugin:
                     DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
 
                 else:
-                    if inverter_values:
+                    if inverter_values and "c_sunspec_did" in inverter_values:
                         DomoLog(LogLevels.NORMAL, "Inverter returned information")
 
                         to_log = inverter_values
@@ -619,7 +632,7 @@ class BasePlugin:
                         self.inverter.disconnect()
                         self.retryafter = datetime.now() + self.retrydelay
 
-                        DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}. BUT... inverter returned no information".format(self.inverter_address, self.inverter_port, self.inverter_unit))
+                        DomoLog(LogLevels.NORMAL, "Connection established with: {}:{} Device Address: {}. BUT... inverter returned no or not enough information".format(self.inverter_address, self.inverter_port, self.inverter_unit))
                         DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
         else:
             DomoLog(LogLevels.NORMAL, "Retrying to communicate with inverter after: {}".format(self.retryafter))
@@ -640,12 +653,6 @@ class BasePlugin:
             table = self.device_dictionary[device_name]["table"]
             offset = self.device_dictionary[device_name]["offset"]
             prepend_name = device_name + " - "
-
-            # Set the number of samples on all the math objects.
-
-            for unit in table:
-                if unit[Column.MATH]  and self.do_math:
-                    unit[Column.MATH].set_max_samples(self.max_samples)
 
             # We updated some device types over time.
             # Let's make sure that we have the correct type setup.
@@ -707,3 +714,7 @@ def onStart():
 def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
+
+def onStop():
+    global _plugin
+    _plugin.onStop()
