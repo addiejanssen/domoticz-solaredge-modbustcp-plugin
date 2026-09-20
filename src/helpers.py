@@ -1,114 +1,152 @@
-import Domoticz
-
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum, unique
 
-#
-# A nice way to only show what we want to show.
-#
+import Domoticz
+
 
 @unique
 class LogLevels(IntEnum):
+    """
+    Log levels for controlling the verbosity of logging output.
+    NORMAL: Standard logging level, shows essential information.
+    VERBOSE: More detailed logging level, shows additional information for debugging.
+    EXTRA: Even more detailed logging level, shows extensive information for in-depth debugging.
+    MAX: Maximum logging level, shows all available information for comprehensive debugging.
+    """
 
-    NORMAL      = 0
-    VERBOSE     = 1
-    EXTRA       = 2
-    MAX         = 3
+    NORMAL = 0
+    VERBOSE = 1
+    EXTRA = 2
+    MAX = 3
 
-CurrentLogLevel = LogLevels.NORMAL
 
-def SetLogLevel(level):
+CurrentLogLevel: LogLevels = LogLevels.NORMAL
+
+
+def SetLogLevel(level: LogLevels) -> None:
+    """Set the current logging level."""
     global CurrentLogLevel
     CurrentLogLevel = level
 
-def DomoLog(level, message):
+
+def DomoLog(level: LogLevels, message: str) -> None:
+    """Log a message if the current logging level is greater than or equal to the specified level."""
     if (CurrentLogLevel >= level):
         Domoticz.Log(message)
 
-#
-# Return a timestamp that can be used in a managed counter
-#
 
-class Timestamp:
+class TimedSampleList:
+    """
+    A class to store samples with timestamps and provide methods to update and retrieve values based on a sliding window of time.
+    The samples are stored as a list of tuples, where each tuple contains a timestamp and a corresponding value.
+    On update, the class appends a new sample and removes any samples that are older than 5 minutes.
+    """
 
-    # value is being ignored for now
-    def get(self, value):
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def __init__(self) -> None:
+        self.samples: list[tuple[datetime, float]] = []
+        self.max_time: timedelta = timedelta(minutes=5)
 
-#
-# Meters can measure power, which can show a positive or negative
-# value depending on the direction of the power.
-# In certain scenario's we want to split it up and "swap" the graph.
-# Showing positive values for both flows of power and only
-# have the part where the value is more than 0.
-# That's where this class comes into play.
-#
+    def update(self, append_value: float, scale: int = 0) -> None:
+        """
+        Update the sample list with a new value and remove any samples that are older than the maximum time window.
+        """
+        now: datetime = datetime.now()
+        self.samples.append((now, append_value * (10 ** scale)))
+
+        self.prune()
+
+        DomoLog(level=LogLevels.MAX,
+                message=f"{self.__class__.__name__}: {append_value * (10 ** scale)} - {self.get()} - {len(self.samples)} values")
+
+    def get(self) -> float:
+        """
+        Abstract method to retrieve a value based on the stored samples.
+        This method should be implemented by subclasses to provide specific calculations (e.g., average, maximum)
+        """
+        raise NotImplementedError("Subclasses must implement the get method.")
+
+    def prune(self) -> None:
+        """
+        Prune the sample list by removing any samples that are older than the maximum time window.
+        """
+        if self.samples:
+            now: datetime = datetime.now()
+            self.samples = [(timestamp, value) for timestamp,
+                            value in self.samples if now - timestamp <= self.max_time]
+
+class Average(TimedSampleList):
+    """
+    A class to calculate the average value based on a sliding window of samples.
+    Inherits from TimedSampleList and implements the get method to return the average of the stored samples.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get(self) -> float:
+        """
+        Calculate the average of the stored samples.
+
+        Returns
+        -------
+            float: The average value of the samples, or 0 if there are no samples.
+        """
+        self.prune()  # Ensure samples are pruned before calculating the average
+
+        if self.samples:
+            sum_value: float = sum(value for _, value in self.samples)
+            return sum_value / len(self.samples)
+        else:
+            return 0
+
+
+class Maximum(TimedSampleList):
+    """
+    A class to calculate the maximum value based on a sliding window of samples.
+    Inherits from TimedSampleList and implements the get method to return the maximum of the stored samples.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def get(self) -> float:
+        """
+        Calculate the maximum of the stored samples.
+
+        Returns
+        -------
+            float: The maximum value of the samples, or 0 if there are no samples.
+        """
+        self.prune()  # Ensure samples are pruned before calculating the maximum
+
+        if self.samples:
+            return max(value for _, value in self.samples)
+        else:
+            return 0
+
 
 class Above:
-    def __init__(self, base, multiplier):
-        self.base = base
-        self.multiplier = multiplier
+    """
+    Meters can measure power, which can show a positive or negative value depending on the direction of the power.
+    In certain scenarios, we want to show a graph with only positive values for both flows of power.
+    This class filters values based on a base threshold and a multiplier.
+    If the value multiplied by the multiplier is greater than or equal to the base threshold,
+    the method returns the multiplied value; otherwise, it returns 0.
+    """
 
-    def get(self, value):
+    def __init__(self, base: float, multiplier: int) -> None:
+        self.base: float = base
+        self.multiplier: int = multiplier
+
+    def get(self, value: float) -> float:
+        """
+        Filter the input value based on the base threshold and multiplier.
+
+        Returns
+        -------
+            float: The filtered value, or 0 if the condition is not met.
+        """
         if (value * self.multiplier) >= self.base:
             return value * self.multiplier
         else:
             return 0
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Average class can be used to calculate the average value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Average:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        DomoLog(LogLevels.MAX, "Average: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return sum(self.samples) / len(self.samples)
-
-#
-# Domoticz shows graphs with intervals of 5 minutes.
-# When collecting information from the inverter more frequently than that, then it makes no sense to only show the last value.
-#
-# The Maximum class can be used to calculate the highest value based on a sliding window of samples.
-# The number of samples stored depends on the interval used to collect the value from the inverter itself.
-#
-
-class Maximum:
-
-    def __init__(self):
-        self.samples = []
-        self.max_samples = 30
-
-    def set_max_samples(self, max):
-        self.max_samples = max
-        if self.max_samples < 1:
-            self.max_samples = 1
-
-    def update(self, new_value, scale = 0):
-        self.samples.append(new_value * (10 ** scale))
-        while (len(self.samples) > self.max_samples):
-            del self.samples[0]
-
-        DomoLog(LogLevels.MAX, "Maximum: {} - {} values".format(self.get(), len(self.samples)))
-
-    def get(self):
-        return max(self.samples)
