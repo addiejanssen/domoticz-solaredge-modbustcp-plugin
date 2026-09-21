@@ -8,6 +8,19 @@ This is a pre-release of the 2.x.x version of the plugin which will support read
 
 The focus of this release is fixing issues and making the plugin more robust.
 
+### Fixed
+
+- Fixed missing offset in processValues.
+  Thanks goes out to [JayDotR](https://forum.domoticz.com/memberlist.php?mode=viewprofile&u=42451)
+  for finding the bug and providing the fix.
+
+
+## [2.0.6] - 2026-09-20
+
+This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
+
+The focus of this release is fixing issues and making the plugin more robust.
+
 ### Added
 
 - Added disconnect from the inverter when Domoticz is stopping the plugin.

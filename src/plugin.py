@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.6" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
+<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.0.7" externallink="https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin">
     <params>
         <param field="Address" label="Inverter IP Address" width="150px" required="true" />
         <param field="Port" label="Inverter Port Number" width="150px" required="true" default="502" />
@@ -359,7 +359,7 @@ class BasePlugin:
                         # if not updated in the last 5 minutes to prevent long slopes in graphs
                         # when the value is constant for a long time.
 
-                        last_update: datetime = datetime.strptime(Devices[unit[Column.ID]].LastUpdate, "%Y-%m-%d %H:%M:%S")
+                        last_update: datetime = datetime.strptime(Devices[unit[Column.ID] + offset].LastUpdate, "%Y-%m-%d %H:%M:%S")
                         if sValue != Devices[unit[Column.ID] + offset].sValue or (now - last_update) >= timedelta(minutes=5):
                             Devices[unit[Column.ID] + offset].Update(nValue=0, sValue=str(sValue), TimedOut=0)
                             updated += 1
