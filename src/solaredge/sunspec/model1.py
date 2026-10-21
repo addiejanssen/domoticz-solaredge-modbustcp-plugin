@@ -1,3 +1,15 @@
+"""
+SunSpec Device Model
+
+Author:  Addie Janssen (https://addiejanssen.com)
+License: MIT
+
+Do not modify this file - it is generated from the SunSpec Model Definitions
+as published here: https://github.com/sunspec/models - commit: 90b4a33
+
+Any changes made to this file will be lost on the next generation of the model.
+"""
+
 from typing import ClassVar
 
 from ..base import DeviceDescription, ModbusDataType, ModbusWordOrder, RegisterMap, RegisterMapEntry
