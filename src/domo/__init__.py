@@ -1,4 +1,5 @@
 from .base import Device
+from .counter import ManagedCounterEnergyDevice
 from .current import CurrentDevice
 from .energy import EnergyExportDevice, EnergyImportDevice
 from .frequency import FrequencyDevice
@@ -15,6 +16,7 @@ __all__: list[str] = [
     "EnergyExportDevice",
     "EnergyImportDevice",
     "FrequencyDevice",
+    "ManagedCounterEnergyDevice",
     "PercentageDevice",
     "PowerDevice",
     "ReactivePowerDevice",

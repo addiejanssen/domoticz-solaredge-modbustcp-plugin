@@ -1,13 +1,13 @@
-import Domoticz
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import IntEnum
 from typing import ClassVar
 
-from helpers import DomoLog, LogLevels
-
+import Domoticz
 from solaredge import Device as SolarEdgeDevice
+
+from .logging import DomoLog, LogLevels
+
 
 class DeviceType(IntEnum):
     """The main device types used"""
@@ -87,7 +87,9 @@ class Device:
         else:
             self._calculator = None
 
-    def update(self):
+    def update(self) -> str:
+
+        result:str = ""
 
         primary = self._solaredge_device.get(self._solaredge_primary_register)
         if self._calculator:
@@ -96,52 +98,48 @@ class Device:
         secondary = None
         if self._solaredge_secondary_register:
             secondary = self._solaredge_device.get(self._solaredge_secondary_register)
-
             result = self.configuration.format.format(primary, secondary)
-
         else: 
             result = self.configuration.format.format(primary)
 
         return result
 
 
-    def updateDomoticzValue(self, domoticz_devices: dict[int, Domoticz.Device], now:datetime):
+    def updateDomoticzValue(self, domoticz_devices: dict[int, Domoticz.Device], now:datetime) -> bool:
+
+        DomoLog(level=LogLevels.DEBUG, message=f"Entered {self.__class__.__name__}.updateDomoticzValue()")
+        did_update: bool = False
 
         if self.id in domoticz_devices:
-
-            DomoLog(LogLevels.DEBUG, f"Entered {self.__class__.__name__}.updateDomoticzValue()")
-
-            sValue = self.update()
-
+            sValue: str = self.update()
             last_update: datetime = datetime.strptime(domoticz_devices[self.id].LastUpdate, "%Y-%m-%d %H:%M:%S")
             if sValue != domoticz_devices[self.id].sValue or (now - last_update) >= timedelta(minutes=5):
-                DomoLog(LogLevels.DEBUG, f" Updating value to [{sValue}]")
+                DomoLog(level=LogLevels.INFO, message=f" [{self.name}] updating value to [{sValue}]")
                 domoticz_devices[self.id].Update(nValue=0, sValue=sValue)
+                did_update = True
             else:
-                DomoLog(LogLevels.DEBUG, " Value has not changed and last update is too fresh")
+                DomoLog(level=LogLevels.INFO, message=f" [{self.name}] value has not changed and last update is too fresh")
 
-            DomoLog(LogLevels.DEBUG, f"Leaving {self.__class__.__name__}.updateDomoticzValue()")
+        DomoLog(level=LogLevels.DEBUG, message=f"Leaving {self.__class__.__name__}.updateDomoticzValue()")
+        return did_update
 
 
+    def updateDomoticzDevice(self, add_missing_device: bool, domoticz_devices: dict[int, Domoticz.Device]) -> None:
 
-    def updateDomoticzDevice(self, add_missing_device: bool, domoticz_devices: dict[int, Domoticz.Device]):
-
-        DomoLog(LogLevels.DEBUG, f"Entered {self.__class__.__name__}.createDomoticzDevice()")
-
-        DomoLog(LogLevels.DEBUG, f" For device id [{self.id}] name [{self.name}]")
-
+        DomoLog(level=LogLevels.DEBUG, message=f"Entered {self.__class__.__name__}.createDomoticzDevice()")
+        DomoLog(level=LogLevels.DEBUG, message=f" For device id [{self.id}] name [{self.name}]")
 
         if self.id in domoticz_devices:
             domoticz_device: Domoticz.Device = domoticz_devices[self.id]
 
-            DomoLog(LogLevels.DEBUG, f"  Check if device [{domoticz_device.Name}] needs updating")
+            DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]  Check if device [{domoticz_device.Name}] needs updating")
 
             if (domoticz_device.Type != self.configuration.type_id or
                 domoticz_device.SubType != self.configuration.subtype_id or
                 domoticz_device.SwitchType != self.configuration.switch_type_id or
                 domoticz_device.Options != self.configuration.options):
 
-                DomoLog(LogLevels.DEBUG, "   Updating device \"{}\"".format(domoticz_device.Name))
+                DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]   Updating device [{domoticz_device.Name}]")
 
                 nValue = domoticz_device.nValue
                 sValue = domoticz_device.sValue
@@ -155,11 +153,10 @@ class Device:
                         sValue=sValue
                 )
             else:
-                DomoLog(LogLevels.DEBUG, "   No Update needed")
+                DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]   No Update needed")
 
         elif add_missing_device:
-
-            DomoLog(LogLevels.DEBUG, f"  Adding new domoticz device id [{self.id}] name [{self.name}]")
+            DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]  Adding new domoticz device id [{self.id}] name [{self.name}]")
 
             Domoticz.Device(
                 Unit=self.id,
@@ -171,7 +168,6 @@ class Device:
                 Used=1,
             ).Create()
         else:
-            DomoLog(LogLevels.DEBUG, "  Add missing devices is turned off - skipping device")
+            DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]  Add missing devices is turned off - skipping device")
 
-
-        DomoLog(LogLevels.DEBUG, f"Leaving {self.__class__.__name__}.createDomoticzDevice()")
+        DomoLog(level=LogLevels.DEBUG, message=f"Leaving {self.__class__.__name__}.createDomoticzDevice()")

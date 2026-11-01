@@ -4,12 +4,13 @@ from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 from typing import Any, ClassVar, TypeAlias
 
+from domo.logging import DomoLog, LogLevels
 from pymodbus import ModbusException
 from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ConnectionException
 from pymodbus.pdu import ModbusPDU
 
 ModbusDataType: TypeAlias = ModbusTcpClient.DATATYPE
-
 
 class ModbusWordOrder(StrEnum):
     """Some registers use Big Endian other Little Endian"""
@@ -66,7 +67,10 @@ class Device:
 
     def read(self) -> list[int]:
         """Read one or more holding registers from a Modbus server"""
+
+        DomoLog(LogLevels.DEBUG, f"Entered {self.__class__.__name__}.read()")
         self._registers = self._inverter.read(address=self._address, count=self.register_count, device_id=self._device_id)
+        DomoLog(LogLevels.DEBUG, f"Leaving {self.__class__.__name__}.read()")
         return self._registers
 
     def get(self, key: str) -> int | float | str | list[bool] | list[int] | list[float] | None:
@@ -153,9 +157,14 @@ class SolarEdge:
             host=self._modbus_hostname, port=self._modbus_port_number, timeout=self._modbus_timeout
         )
 
-    def connect(self) -> bool:
-        """Connect to the inverter and return if successful"""
-        return self._modbus_client.connect()
+    @property
+    def connected(self) -> bool:
+        """Check if socket exists."""
+        return self._modbus_client.connected
+
+#    def connect(self) -> bool:
+#        """Connect to the inverter and return if successful"""
+#        return self._modbus_client.connect()
 
     def disconnect(self) -> None:
         """Close the connection with the inverter"""
@@ -177,12 +186,15 @@ class SolarEdge:
             else:
                 read_now = end - start
 
-            try:
-                self._modbus_client.connect()
-                rr: ModbusPDU = self._modbus_client.read_holding_registers(address=start, count=read_now, device_id=device_id)
-            except ModbusException as exc:
-                print(f"Received ModbusException({exc}) from library")
-                return []
+#            try:
+#                self._modbus_client.connect()
+            rr: ModbusPDU = self._modbus_client.read_holding_registers(address=start, count=read_now, device_id=device_id)
+#            except ConnectionException:
+#                raise
+#            except ModbusException as exc:
+#                print(f"Received ModbusException({exc}) from library")
+#                return []
+
             if rr.isError():
                 print(f"Received exception from device ({rr})")
                 return []

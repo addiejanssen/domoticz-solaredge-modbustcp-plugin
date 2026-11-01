@@ -241,4 +241,13 @@ class VendorBattery(VendorDevice):
             scaling_item_id="",
             description="Events Log",
         ),
+        "eli": RegisterMapEntry(
+            offset=146,
+            size=1,
+            word_order=ModbusWordOrder.BIG,
+            register_type=ModbusDataType.UINT16,
+            python_type=int,
+            scaling_item_id="",
+            description="Events Log Internal",
+        ),
     }
