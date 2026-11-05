@@ -2,7 +2,7 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
-## [3.0.0] - yyyy-mm-dd
+## [3.0.0-dev.1] - 2026-11-05
 
 This is the first (pre-release) of the 3.x.x version of the plugin.
 This version should be considered as an __alpha__ version - __it needs testing and community feedback__!
@@ -32,8 +32,7 @@ This approach resulted in much easier to create and maintain mapping tables (whi
 This version of the plugin requires a newer version of `pymodbus` which is __INCOMPATIBLE__ with the 1.1.x and 2.0.x versions of the plugin.
 
 __DO NOT OVERWRITE__ your current 1.1.x or 2.0.x plugin with this 3.0.0 version at this point in time, but run them __next to each other__.
-
-> Action: create wiki page with installation instructions!
+This the wiki page specifically setup for this version: https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/wiki/Domoticz-Development-Notes
 
 ### Added
 
