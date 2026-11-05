@@ -32,7 +32,19 @@ This approach resulted in much easier to create and maintain mapping tables (whi
 This version of the plugin requires a newer version of `pymodbus` which is __INCOMPATIBLE__ with the 1.1.x and 2.0.x versions of the plugin.
 
 __DO NOT OVERWRITE__ your current 1.1.x or 2.0.x plugin with this 3.0.0 version at this point in time, but run them __next to each other__.
-This the wiki page specifically setup for this version: https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/wiki/Domoticz-Development-Notes
+The Domoticz Development Notes wiki page is specifically setup for this version: https://github.com/addiejanssen/domoticz-solaredge-modbustcp-plugin/wiki/Domoticz-Development-Notes.
+
+### Missing functionality
+
+The v3.0.0-dev.1 version currently reads inverter information as specified by the SunSpec specifications.
+SolarEdge implemented vendor specific measurements as documented in the "Technical Note – Power Control Protocol for SolarEdge Inverters" document.
+The v2.0.x version of the plugin included this information as part of the inverter measurements, but the v3.0.0-dev.1 does not.
+As a result, the following measurements are not yet available:
+- RRCR State
+- Active Power Limit
+- cos-phi
+
+These measurements will be added again once the "Power Control" specific functionality will be implemented.
 
 ### Added
 
@@ -43,7 +55,7 @@ This the wiki page specifically setup for this version: https://github.com/addie
 ### Changed
 
 - Major restructuring of the code base and the device mapping tables.
-- Removed the (archived) [solaredge_modbus](https://github.com/nmakel/solaredge_modbus) library.
+- Replaced the (archived) [solaredge_modbus](https://github.com/nmakel/solaredge_modbus) library.
 - Removed the option to enable/disable calculations. Calculations are now defined per device class and can not be turned on or off.
 - Removed the option to scan for particular hardware components. As of this version, the plugin should be able to take care of it itself.
 - The log level settings have been renamed and limited to "Normal", "Info" and "Debug".
