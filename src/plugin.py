@@ -9,7 +9,7 @@
 #
 
 """
-<plugin key="SolarEdge_ModbusTCP" name="SolarEdge ModbusTCP" author="Addie Janssen" version="2.1.1">
+<plugin key="SolarEdge_ModbusTCP-DEV" name="SolarEdge ModbusTCP-DEV" author="Addie Janssen" version="3.0.0">
     <description>
         <hr/>
         <h2>SolarEdge ModbusTCP Plugin</h2>

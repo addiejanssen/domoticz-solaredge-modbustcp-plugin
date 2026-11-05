@@ -2,9 +2,9 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
-## [2.1.1] - yyyy-mm-dd
+## [3.0.0] - yyyy-mm-dd
 
-This is the first (pre-release) of the 2.1.x version of the plugin.
+This is the first (pre-release) of the 3.x.x version of the plugin.
 This version should be considered as an __alpha__ version - __it needs testing and community feedback__!
 
 The main focus of this version is to replace the (archived) [solaredge_modbus](https://github.com/nmakel/solaredge_modbus) library and to fix the errors in battery detection.
@@ -22,7 +22,7 @@ The codebase of the plugin has undergone a major restructure to replace the `sol
 The 2.1.x version now follows the SunSpec specification to identify the inverter and its capabilities, but continues to use the SolarEdge specification regarding batteries.
 This has resulted in a new approach to find attached meters and batteries.
 
-Another major change relates to how the plugin creates and updates Domoticzs devices.
+Another major change relates to how the plugin creates and updates Domoticz devices.
 Each "type of" device now has its own python class.
 For example: when displaying the frequency (which is not natively supported by Domoticz), the FrequencyDevice class "knows" how to create a custom device and how to update the values of it.
 This approach resulted in much easier to create and maintain mapping tables (which have moved into their own file as well).
@@ -31,7 +31,7 @@ This approach resulted in much easier to create and maintain mapping tables (whi
 
 This version of the plugin requires a newer version of `pymodbus` which is __INCOMPATIBLE__ with the 1.1.x and 2.0.x versions of the plugin.
 
-__DO NOT OVERWRITE__ your current 1.1.x or 2.0.x plugin with this 2.1.x version at this point in time, but run them __next to each other__.
+__DO NOT OVERWRITE__ your current 1.1.x or 2.0.x plugin with this 3.0.0 version at this point in time, but run them __next to each other__.
 
 > Action: create wiki page with installation instructions!
 
