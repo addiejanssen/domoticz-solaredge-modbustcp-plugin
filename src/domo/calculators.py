@@ -1,7 +1,12 @@
 from datetime import datetime, timedelta
 
+class Calculator:
+    """Base class for all calculator classes"""
 
-class TimedSampleList:
+    pass
+
+
+class TimedSampleList(Calculator):
     """
     A class to store samples with timestamps and provide methods to update and retrieve values based on a sliding window of time.
     The samples are stored as a list of tuples, where each tuple contains a timestamp and a corresponding value.
@@ -90,7 +95,7 @@ class Maximum(TimedSampleList):
             return 0
 
 
-class Above:
+class Above(Calculator):
     """
     Meters can measure power, which can show a positive or negative value depending on the direction of the power.
     In certain scenarios, we want to show a graph with only positive values for both flows of power.

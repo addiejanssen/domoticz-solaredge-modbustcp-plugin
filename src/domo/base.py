@@ -6,6 +6,7 @@ from typing import ClassVar
 import Domoticz
 from solaredge import Device as SolarEdgeDevice
 
+from .calculators import Calculator
 from .logging import DomoLog, LogLevels
 
 
@@ -58,7 +59,7 @@ class DeviceStaticConfiguration:
     switch_type_id: DeviceSwitchType
     options: dict[str, str]
     format: str
-    calculator: type | None
+    calculator: Calculator | None
 
 
 class Device:
