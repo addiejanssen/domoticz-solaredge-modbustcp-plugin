@@ -2,6 +2,11 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [2.0.8] - 2026-11-05
+
+This is a version bump to release the latest 2.x.x version of the plugin and by doing so, replace v1.1.
+There are no changes compared to v2.0.7 and therefore it is not necessary to upgrade from v2.0.7.
+
 ## [2.0.7] - 2026-09-21
 
 This is a pre-release of the 2.x.x version of the plugin which will support reading meter and battery data next to the inverter data.
