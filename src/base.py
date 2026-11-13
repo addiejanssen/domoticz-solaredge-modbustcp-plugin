@@ -131,12 +131,18 @@ class SolarEdgeModbusPlugin:
                 DomoLog(level=LogLevels.INFO, message=f"Start processing [{plugin_device_name}]")
 
                 # Contact the inverter and get the data for this SolarEdge device
-                details.solaredge_device.read()
+                try:
+                    details.solaredge_device.read()
 
-                for device_key in details.domoticz_devices:
-                    device: DomoDevice = details.domoticz_devices[device_key]
-                    if device.updateDomoticzValue(domoticz_devices=self._domoticz_devices, now=now):
-                        update_count += 1
+                    for device_key in details.domoticz_devices:
+                        device: DomoDevice = details.domoticz_devices[device_key]
+                        if device.updateDomoticzValue(domoticz_devices=self._domoticz_devices, now=now):
+                            update_count += 1
+
+                except Exception as exc:
+                    DomoLog(level=LogLevels.DEBUG, message=f"Exception while reading [{plugin_device_name}]")
+                    DomoLog(level=LogLevels.DEBUG, message=f"{exc}")
+                    DomoLog(level=LogLevels.DEBUG, message="Skipping this device and moving on")
 
                 DomoLog(level=LogLevels.INFO, message=f"Finished processing [{plugin_device_name}]")
 
