@@ -221,6 +221,8 @@ class SolarEdgeModbusPlugin:
                                         domoticz_unit_offset = map_details.start_offset * (battery_count * map_details.max_offset)
                                         battery_count += 1
                                         domoticz_unit_name = f"{map_details.device_type.value}_{battery_count}"
+                        else:
+                            DomoLog(level=LogLevels.NORMAL, message=" This device type is not yet supported by the plugin")
 
                         if domoticz_unit_offset > -1 and mapping:
                             DomoLog(level=LogLevels.INFO, message=f"Found a [{mapper_device_type.value}]")

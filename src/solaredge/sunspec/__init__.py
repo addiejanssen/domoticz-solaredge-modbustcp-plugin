@@ -9,6 +9,19 @@ from .model201 import SunSpecDeviceModel201
 from .model202 import SunSpecDeviceModel202
 from .model203 import SunSpecDeviceModel203
 from .model204 import SunSpecDeviceModel204
+from .model701 import SunSpecDeviceModel701
+from .model702 import SunSpecDeviceModel702
+from .model703 import SunSpecDeviceModel703
+from .model704 import SunSpecDeviceModel704
+from .model705 import SunSpecDeviceModel705
+from .model706 import SunSpecDeviceModel706
+from .model707 import SunSpecDeviceModel707
+from .model708 import SunSpecDeviceModel708
+from .model709 import SunSpecDeviceModel709
+from .model710 import SunSpecDeviceModel710
+from .model711 import SunSpecDeviceModel711
+from .model712 import SunSpecDeviceModel712
+from .model713 import SunSpecDeviceModel713
 
 __all__: list[str] = [
     "SunSpecDeviceModel1",
@@ -19,6 +32,19 @@ __all__: list[str] = [
     "SunSpecDeviceModel202",
     "SunSpecDeviceModel203",
     "SunSpecDeviceModel204",
+    "SunSpecDeviceModel701",
+    "SunSpecDeviceModel702",
+    "SunSpecDeviceModel703",
+    "SunSpecDeviceModel704",
+    "SunSpecDeviceModel705",
+    "SunSpecDeviceModel706",
+    "SunSpecDeviceModel707",
+    "SunSpecDeviceModel708",
+    "SunSpecDeviceModel709",
+    "SunSpecDeviceModel710",
+    "SunSpecDeviceModel711",
+    "SunSpecDeviceModel712",
+    "SunSpecDeviceModel713",
     "SunSpecNotImplemented",
     "SunSpecDeviceUnknownModel",
     "scan",
@@ -33,6 +59,19 @@ _all_models: dict[int, type] = {
     202: SunSpecDeviceModel202,
     203: SunSpecDeviceModel203,
     204: SunSpecDeviceModel204,
+    701: SunSpecDeviceModel701,
+    702: SunSpecDeviceModel702,
+    703: SunSpecDeviceModel703,
+    704: SunSpecDeviceModel704,
+    705: SunSpecDeviceModel705,
+    706: SunSpecDeviceModel706,
+    707: SunSpecDeviceModel707,
+    708: SunSpecDeviceModel708,
+    709: SunSpecDeviceModel709,
+    710: SunSpecDeviceModel710,
+    711: SunSpecDeviceModel711,
+    712: SunSpecDeviceModel712,
+    713: SunSpecDeviceModel713,
 }
 
 
