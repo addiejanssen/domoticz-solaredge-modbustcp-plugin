@@ -2,6 +2,16 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [3.0.0-dev.2] - 2026-11-13
+
+This is a bug fix release of the 3.x.x. version of the plugin.
+It's a bit of risk to release a bug fix on Friday the 13th, but hey... this is an __alpha__ version anyway.
+
+### Fixed
+
+- The plugin now catches exceptions caused during reading information from the inverter.
+- The plugin would report "Found [Unknown]" when it found a SunSpec model that is not yet supported by the plugin. With this update it now reports which SunSpec model that is.
+
 ## [3.0.0-dev.1] - 2026-11-05
 
 This is the first (pre-release) of the 3.x.x version of the plugin.
