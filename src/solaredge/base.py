@@ -5,9 +5,7 @@ from enum import IntEnum, StrEnum
 from typing import Any, ClassVar, TypeAlias
 
 from domo.logging import DomoLog, LogLevels
-from pymodbus import ModbusException
 from pymodbus.client import ModbusTcpClient
-from pymodbus.exceptions import ConnectionException
 from pymodbus.pdu import ModbusPDU
 
 ModbusDataType: TypeAlias = ModbusTcpClient.DATATYPE
