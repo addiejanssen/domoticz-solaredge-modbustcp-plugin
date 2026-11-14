@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
-from logging import PlaceHolder
 from typing import TypeAlias
 
 import domo
@@ -66,9 +65,9 @@ class InverterUnit(UnitEnum):
     # These measurements have been moved to the Power Control section further on.
     # We will keep these here, since they influence the calculation of meter and battery unit ids
     # and previous installations of the 2.x.x version assumed these values to be here.
-    RRCR_STATE          = 23
-    ACTIVE_POWER_LIMIT  = 24
-    COSPHI              = 25
+    RESERVED_23         = 23
+    RESERVED_24         = 24
+    RESERVED_25         = 25
 
 InverterStartOffset:int = 0
 InverterMaxOffset:int = max(InverterUnit)

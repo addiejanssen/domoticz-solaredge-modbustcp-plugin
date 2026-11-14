@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from .base import Device, DeviceStaticConfiguration, DeviceSubtype, DeviceSwitchType, DeviceType
-from .calculators import Above
+from .calculators import AboveZero, BelowZero
 
 class EnergyDevice(Device):
     """A Domoticz Device to measure (bi-directional) Energy"""
@@ -29,7 +29,7 @@ class EnergyExportDevice(Device):
         switch_type_id=DeviceSwitchType.EXPORTING,
         options={},
         format="{:.0f};{:.0f}",
-        calculator=Above(base=0, multiplier=1),
+        calculator=AboveZero,
     )
 
 
@@ -47,5 +47,5 @@ class EnergyImportDevice(Device):
         switch_type_id=DeviceSwitchType.IMPORTING,
         options={},
         format="{:.0f};{:.0f}",
-        calculator=Above(base=0, multiplier=-1),
+        calculator=BelowZero,
     )

@@ -3,7 +3,18 @@ from datetime import datetime, timedelta
 class Calculator:
     """Base class for all calculator classes"""
 
-    pass
+    def update(self, new_value: float) -> float:
+        """
+        Update the calculation and return the updated value.
+        """
+        return self.get()
+
+    def get(self) -> float:
+        """
+        Abstract method to retrieve a value based on the stored samples.
+        This method should be implemented by subclasses to provide specific calculations (e.g., average, maximum)
+        """
+        raise NotImplementedError("Subclasses must implement the get method.")
 
 
 class TimedSampleList(Calculator):
@@ -17,23 +28,16 @@ class TimedSampleList(Calculator):
         self.samples: list[tuple[datetime, float]] = []
         self.max_time: timedelta = timedelta(minutes=5)
 
-    def update(self, append_value: float) -> float:
+    def update(self, new_value: float) -> float:
         """
         Update the sample list with a new value and remove any samples that are older than the maximum time window.
         """
         now: datetime = datetime.now()
-        self.samples.append((now, append_value))
+        self.samples.append((now, new_value))
 
         self.prune()
 
         return self.get()
-
-    def get(self) -> float:
-        """
-        Abstract method to retrieve a value based on the stored samples.
-        This method should be implemented by subclasses to provide specific calculations (e.g., average, maximum)
-        """
-        raise NotImplementedError("Subclasses must implement the get method.")
 
     def prune(self) -> None:
         """
@@ -95,28 +99,47 @@ class Maximum(TimedSampleList):
             return 0
 
 
-class Above(Calculator):
+class AboveZero(Calculator):
     """
     Meters can measure power, which can show a positive or negative value depending on the direction of the power.
-    In certain scenarios, we want to show a graph with only positive values for both flows of power.
-    This class filters values based on a base threshold and a multiplier.
-    If the value multiplied by the multiplier is greater than or equal to the base threshold,
-    the method returns the multiplied value; otherwise, it returns 0.
+    In certain scenarios, we want to show a graph for one direction.
+    This class only returns all values above zero.
     """
 
-    def __init__(self, base: float, multiplier: int) -> None:
-        self.base: float = base
-        self.multiplier: int = multiplier
+    def __init__(self) -> None:
+        self.value = 0
 
-    def get(self, value: float) -> float:
-        """
-        Filter the input value based on the base threshold and multiplier.
-
-        Returns
-        -------
-            float: The filtered value, or 0 if the condition is not met.
-        """
-        if (value * self.multiplier) >= self.base:
-            return value * self.multiplier
+    def update(self, new_value: float) -> float:
+        """We are only interested in values above 0 (zero)"""
+        if new_value > 0:
+            self.value = new_value
         else:
-            return 0
+            self.value = 0
+
+        return self.value
+
+    def get(self) -> float:
+        """Return the current value"""
+        return self.value
+
+
+class BelowZero(Calculator):
+    """
+    Meters can measure power, which can show a positive or negative value depending on the direction of the power.
+    In certain scenarios, we want to show a graph for one direction.
+    This class only returns all values below zero, however, it will invert the returned value.
+    Therefore, a value of 1 will result in 0, and a value of -1 will result in 1.
+    """
+
+    def update(self, new_value: float) -> float:
+        """We are only interested in values below 0 (zero), but we want to make sure that we return a positive value"""
+        if new_value < 0:
+            self.value = -new_value
+        else:
+            self.value = 0
+
+        return self.value
+
+    def get(self) -> float:
+        """Return the current value"""
+        return self.value
