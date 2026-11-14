@@ -65,10 +65,9 @@ class Device:
 
     def read(self) -> list[int]:
         """Read one or more holding registers from a Modbus server"""
-
-        DomoLog(LogLevels.DEBUG, f"Entered {self.__class__.__name__}.read()")
+        DomoLog(level=LogLevels.DEBUG, message=f"Entered {self.__class__.__name__}.read()")
         self._registers = self._inverter.read(address=self._address, count=self.register_count, device_id=self._device_id)
-        DomoLog(LogLevels.DEBUG, f"Leaving {self.__class__.__name__}.read()")
+        DomoLog(level=LogLevels.DEBUG, message=f"Leaving {self.__class__.__name__}.read()")
         return self._registers
 
     def get(self, key: str) -> int | float | str | list[bool] | list[int] | list[float] | None:
@@ -170,6 +169,11 @@ class SolarEdge:
 
     def read(self, address: int, count: int, device_id: int) -> list[int]:
         """Read one or more holding registers from a Modbus server"""
+        DomoLog(level=LogLevels.DEBUG, message=f"Entered {self.__class__.__name__}.read() with:")
+        DomoLog(level=LogLevels.DEBUG, message=f" address   [{address}]")
+        DomoLog(level=LogLevels.DEBUG, message=f" count     [{count}]")
+        DomoLog(level=LogLevels.DEBUG, message=f" device_id [{device_id}]")
+
         result: list[int] = []
         start: int = address
         end: int = address + count
@@ -181,28 +185,24 @@ class SolarEdge:
         while start < end:
             if end - start > self._modbus_chunk_size:
                 read_now = self._modbus_chunk_size
+                DomoLog(level=LogLevels.DEBUG, message=f" we need multiple reads - read now [{read_now}]")
             else:
                 read_now = end - start
+                DomoLog(level=LogLevels.DEBUG, message=f" we can do a single read - read now [{read_now}]")
 
-#            try:
-#                self._modbus_client.connect()
             rr: ModbusPDU = self._modbus_client.read_holding_registers(address=start, count=read_now, device_id=device_id)
-#            except ConnectionException:
-#                raise
-#            except ModbusException as exc:
-#                print(f"Received ModbusException({exc}) from library")
-#                return []
 
             if rr.isError():
                 print(f"Received exception from device ({rr})")
                 return []
 
             if len(rr.registers) != read_now:
-                print(f"expected [{read_now}] got [{len(rr.registers)}]")
+                DomoLog(level=LogLevels.DEBUG, message=f" ERROR - expected [{read_now}] but got [{len(rr.registers)}]")
 
             start += read_now
             result.extend(rr.registers)
 
+        DomoLog(level=LogLevels.DEBUG, message=f"Leaving {self.__class__.__name__}.read()")
         return result
 
     def scan(self, device_id: int) -> list[Device]:
