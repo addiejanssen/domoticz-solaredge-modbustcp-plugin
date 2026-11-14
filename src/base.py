@@ -217,13 +217,13 @@ class SolarEdgeModbusPlugin:
                                     if meter_count < map_details.max_devices:
                                         domoticz_unit_offset = map_details.start_offset + (meter_count * map_details.max_offset)
                                         meter_count += 1
-                                        domoticz_unit_name = f"{map_details.device_type.value}_{meter_count}"
+                                        domoticz_unit_name = f"{map_details.device_type.value}{meter_count}"
 
                                 case mapper.DeviceTypeMapping.BATTERY:
                                     if battery_count < map_details.max_devices:
                                         domoticz_unit_offset = map_details.start_offset + (battery_count * map_details.max_offset)
                                         battery_count += 1
-                                        domoticz_unit_name = f"{map_details.device_type.value}_{battery_count}"
+                                        domoticz_unit_name = f"{map_details.device_type.value}{battery_count}"
 
                                 case mapper.DeviceTypeMapping.POWER_CONTROL:
                                     if power_control_count < map_details.max_devices:
