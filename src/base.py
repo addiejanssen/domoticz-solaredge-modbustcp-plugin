@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import mapper
+import pymodbus
 from domo import Device as DomoDevice
 from domo.logging import DomoLog, LogLevels, SetLogLevel
 from Domoticz import Device as DomoticzDevice
 from Domoticz import Heartbeat as DomoticzHeartbeat
-from pymodbus.exceptions import ConnectionException
 from solaredge import Device as SolarEdgeDevice
 from solaredge import SolarEdge
 
@@ -56,6 +56,8 @@ class SolarEdgeModbusPlugin:
         # onStart is called by Domoticz to start the processing of the plugin.
 
         DomoLog(level=LogLevels.DEBUG, message="Entered onStart()")
+
+        DomoLog(level=LogLevels.NORMAL, message=f"pymodbus version [{pymodbus.__version__}]")
 
         self._domoticz_parameters: dict[str, object] = parameters
         self._domoticz_devices: dict[int, DomoticzDevice] = devices
@@ -169,7 +171,7 @@ class SolarEdgeModbusPlugin:
             try:
                 devices = self._inverter.scan(device_id=self._inverter_device_id)
 
-            except ConnectionException:
+            except pymodbus.exceptions.ConnectionException:
                 self.retry_after = datetime.now() + self.retry_delay
 
                 DomoLog(
@@ -227,7 +229,6 @@ class SolarEdgeModbusPlugin:
                                     if power_control_count < map_details.max_devices:
                                         domoticz_unit_offset = map_details.start_offset + (power_control_count * map_details.max_offset)
                                         power_control_count += 1
-                                        domoticz_unit_name = f"{map_details.device_type.value}_{power_control_count}"
                         else:
                             DomoLog(level=LogLevels.NORMAL, message=" This device will not be shown in Domoticz")
 
@@ -236,7 +237,7 @@ class SolarEdgeModbusPlugin:
 
                             for unit_id in mapping:
                                 unit_name, domo_type, registers = mapping[unit_id]
-                                domo_device = domo_type(id=domoticz_unit_offset + unit_id, name=unit_name, device=device, registers=registers)
+                                domo_device = domo_type(id=domoticz_unit_offset + unit_id, name=f"{domoticz_unit_name}-{unit_name}", device=device, registers=registers)
 
                                 DomoLog(level=LogLevels.INFO, message=f" Found [{unit_name}]")
                                 domo_device.updateDomoticzDevice(self._add_devices, self._domoticz_devices)
