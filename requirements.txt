@@ -1,4 +1,4 @@
 #
 # This version of the plugin requires pymodbus version 3.15.0 or newer
 #
-pymodbus==3.15.0
+pymodbus==3.16.2
