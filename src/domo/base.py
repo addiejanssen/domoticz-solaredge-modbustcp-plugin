@@ -134,6 +134,11 @@ class Device:
             domoticz_device: Domoticz.Device = domoticz_devices[self.id]
 
             DomoLog(level=LogLevels.INFO, message=f"[{self.__class__.__name__}]  Check if device [{domoticz_device.Name}] needs updating")
+            DomoLog(level=LogLevels.DEBUG, message=f" domoticz_device.Type       = [{domoticz_device.Type}]")
+            DomoLog(level=LogLevels.DEBUG, message=f" domoticz_device.SubType    = [{domoticz_device.SubType}]")
+            DomoLog(level=LogLevels.DEBUG, message=f" domoticz_device.SwitchType = [{domoticz_device.SwitchType}]")
+            DomoLog(level=LogLevels.DEBUG, message=f" domoticz_device.Options    = [{domoticz_device.Options}]")
+            DomoLog(level=LogLevels.DEBUG, message=f" domoticz_device.Image      = [{domoticz_device.Image}]")
 
             if (domoticz_device.Type != self.configuration.type_id or
                 domoticz_device.SubType != self.configuration.subtype_id or
