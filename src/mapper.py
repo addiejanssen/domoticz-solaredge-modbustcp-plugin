@@ -431,7 +431,7 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 device_type=DeviceTypeMapping.INVERTER,
                 mapping = ThreePhaseInverterDeviceMap
                 )
-        case solaredge.sunspec.SunSpecDeviceModel201:
+        case solaredge.sunspec.SunSpecDeviceModel201():
             result = MapDetails(
                 start_offset=MeterStartOffset,
                 max_offset=MeterMaxOffset,
@@ -439,7 +439,7 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 device_type=DeviceTypeMapping.METER,
                 mapping = SinglePhaseMeterDeviceMap
                 )
-        case solaredge.sunspec.SunSpecDeviceModel202:
+        case solaredge.sunspec.SunSpecDeviceModel202():
             result = MapDetails(
                 start_offset=MeterStartOffset,
                 max_offset=MeterMaxOffset,
@@ -447,7 +447,7 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 device_type=DeviceTypeMapping.METER,
                 mapping = SplitPhaseMeterDeviceMap
                 )
-        case solaredge.sunspec.SunSpecDeviceModel203:
+        case solaredge.sunspec.SunSpecDeviceModel203():
             result = MapDetails(
                 start_offset=MeterStartOffset,
                 max_offset=MeterMaxOffset,
@@ -455,7 +455,7 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 device_type=DeviceTypeMapping.METER,
                 mapping = WyeThreePhaseMeterDeviceMap
                 )
-        case solaredge.sunspec.SunSpecDeviceModel204:
+        case solaredge.sunspec.SunSpecDeviceModel204():
             result = MapDetails(
                 start_offset=MeterStartOffset,
                 max_offset=MeterMaxOffset,
@@ -464,7 +464,7 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 mapping = DeltaConnectThreePhaseMeterDeviceMap
                 )
 
-        case solaredge.vendor.VendorBattery:
+        case solaredge.vendor.VendorBattery():
             result = MapDetails(
                 start_offset=BatteryStartOffset,
                 max_offset=BatteryMaxOffset,

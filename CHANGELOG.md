@@ -2,6 +2,14 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [3.0.0-dev.3] - 2026-11-14
+
+This is a bug fix release of the 3.x.x. version of the plugin.
+
+### Fixed
+
+- Fixed typos in mapper which resulted in missing meters and batteries.
+
 ## [3.0.0-dev.2] - 2026-11-13
 
 This is a bug fix release of the 3.x.x. version of the plugin.
