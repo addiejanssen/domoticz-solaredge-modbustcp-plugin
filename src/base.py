@@ -185,6 +185,7 @@ class SolarEdgeModbusPlugin:
                     inverter_count: int = 0
                     meter_count: int = 0
                     battery_count: int = 0
+                    power_control_count: int = 0
 
                     for device in devices:
                         domoticz_devices: dict[int, DomoDevice] = {}
@@ -207,22 +208,28 @@ class SolarEdgeModbusPlugin:
                             match mapper_device_type:
                                 case mapper.DeviceTypeMapping.INVERTER:
                                     if inverter_count < map_details.max_devices:
-                                        domoticz_unit_offset = map_details.start_offset * (inverter_count * map_details.max_offset)
+                                        domoticz_unit_offset = map_details.start_offset + (inverter_count * map_details.max_offset)
                                         inverter_count += 1
 
                                 case mapper.DeviceTypeMapping.METER:
                                     if meter_count < map_details.max_devices:
-                                        domoticz_unit_offset = map_details.start_offset * (meter_count * map_details.max_offset)
+                                        domoticz_unit_offset = map_details.start_offset + (meter_count * map_details.max_offset)
                                         meter_count += 1
                                         domoticz_unit_name = f"{map_details.device_type.value}_{meter_count}"
 
                                 case mapper.DeviceTypeMapping.BATTERY:
                                     if battery_count < map_details.max_devices:
-                                        domoticz_unit_offset = map_details.start_offset * (battery_count * map_details.max_offset)
+                                        domoticz_unit_offset = map_details.start_offset + (battery_count * map_details.max_offset)
                                         battery_count += 1
                                         domoticz_unit_name = f"{map_details.device_type.value}_{battery_count}"
+
+                                case mapper.DeviceTypeMapping.POWER_CONTROL:
+                                    if power_control_count < map_details.max_devices:
+                                        domoticz_unit_offset = map_details.start_offset + (power_control_count * map_details.max_offset)
+                                        power_control_count += 1
+                                        domoticz_unit_name = f"{map_details.device_type.value}_{power_control_count}"
                         else:
-                            DomoLog(level=LogLevels.NORMAL, message=" This device type is not yet supported by the plugin")
+                            DomoLog(level=LogLevels.NORMAL, message=" This device will not be shown in Domoticz")
 
                         if domoticz_unit_offset > -1 and mapping:
                             DomoLog(level=LogLevels.INFO, message=f"Found a [{mapper_device_type.value}]")

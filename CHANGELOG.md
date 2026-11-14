@@ -2,6 +2,31 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [3.0.0-dev.4] - 2026-11-14
+
+This is a bug fix release of the 3.x.x. version of the plugin.
+
+The previous 3.0.0-dev.x versions had a bug in calculating the unit ids for meter and battery devices. This has been fixed in this release.
+
+This version adds the first Power Controls features - for now it reads the Power Control measurements only.
+
+### Added
+
+- Added the Vendor Power Control class which shows the following measurements again:
+  - RRCR State
+  - Active Power Limit
+  - Cosine phi
+  The Domoticz unit ids for these measurements have changed compared to the 2.x.x version of the plugin.
+
+### Changed
+
+- Upgraded pymodbus from 3.15.0 to 3.16.2.
+- Changed the message "This device type is not yet supported by the plugin" into "This device will not be shown in Domoticz" which is more accurate.
+
+### Fixed
+
+- Fixed calculation of inverter, meter and battery Unit ids.
+
 ## [3.0.0-dev.3] - 2026-11-14
 
 This is a bug fix release of the 3.x.x. version of the plugin.
