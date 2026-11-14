@@ -2,6 +2,22 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [3.0.0-dev.5] - 2026-11-14
+
+This is a bug fix release of the 3.x.x. version of the plugin.
+
+### Added
+
+- Added some new log messages to improve debugging.
+
+### Changed
+
+- The Domoticz device name now includes the device type: Inverter, Meter<index>, Battery<index> or PowerControl.
+
+### Fixed
+
+- Fixed issue with Energy Import and Export calculation classes.
+
 ## [3.0.0-dev.4] - 2026-11-14
 
 This is a bug fix release of the 3.x.x. version of the plugin.
