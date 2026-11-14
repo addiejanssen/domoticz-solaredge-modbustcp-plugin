@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
+from logging import PlaceHolder
 from typing import TypeAlias
 
 import domo
@@ -19,9 +20,10 @@ DeviceMapping: TypeAlias = dict[UnitEnum, tuple[str, type, list[str]]]
 class DeviceTypeMapping(StrEnum):
     """Lists the types of devices supported by SolarEdge"""
 
-    INVERTER = "Inverter"
-    METER    = "Meter"
-    BATTERY  = "Battery"
+    INVERTER      = "Inverter"
+    METER         = "Meter"
+    BATTERY       = "Battery"
+    POWER_CONTROL = "PowerControl"
 
 
 @dataclass
@@ -61,7 +63,9 @@ class InverterUnit(UnitEnum):
     VOLTAGE_DC          = 20
     POWER_DC            = 21
     TEMPERATURE         = 22
-# Removed for now - we will bring these back once we start to look into power control
+    # These measurements have been moved to the Power Control section further on.
+    # We will keep these here, since they influence the calculation of meter and battery unit ids
+    # and previous installations of the 2.x.x version assumed these values to be here.
     RRCR_STATE          = 23
     ACTIVE_POWER_LIMIT  = 24
     COSPHI              = 25
@@ -207,7 +211,6 @@ class MeterUnit(UnitEnum):
     L1_EXPORT_ENERGY_REACTIVE_Q4    = 59
     L2_EXPORT_ENERGY_REACTIVE_Q4    = 60
     L3_EXPORT_ENERGY_REACTIVE_Q4    = 61
-
 
 MeterStartOffset:int = InverterMaxDevices*InverterMaxOffset
 MeterMaxOffset:int = max(MeterUnit)
@@ -373,7 +376,7 @@ class BatteryUnit(UnitEnum):
     SOH                         = 19
     SOE                         = 20
 
-BatteryStartOffset:int = (InverterMaxDevices*InverterMaxOffset) + (MeterMaxDevices*MeterMaxOffset)
+BatteryStartOffset:int = MeterStartOffset + (MeterMaxDevices*MeterMaxOffset)
 BatteryMaxOffset:int = max(BatteryUnit)
 BatteryMaxDevices:int = 2
 
@@ -400,7 +403,23 @@ BatteryDeviceMap: DeviceMapping = {
     BatteryUnit.SOE:                      ("State of Energy",                    domo.PercentageDevice,           ["soe"]      ),
 }
 
+@unique
+class PowerControlUnit(UnitEnum):
+    """Lists the power control measurements"""
 
+    RRCR_STATE          = 1
+    ACTIVE_POWER_LIMIT  = 2
+    COSPHI              = 3
+
+PowerControlStartOffset:int = BatteryStartOffset + (BatteryMaxDevices*BatteryMaxOffset)
+PowerControlMaxOffset:int = max(PowerControlUnit)
+PowerControlMaxDevices:int = 1
+
+PowerControlDeviceMap: DeviceMapping = {
+    PowerControlUnit.RRCR_STATE:         ("RRCR State",         domo.TextStatusDevice,    ["rrcr"] ),
+    PowerControlUnit.ACTIVE_POWER_LIMIT: ("Active Power Limit", domo.PercentageDevice,    ["apl"]  ),
+    PowerControlUnit.COSPHI:             ("Cosine phi",         domo.GenericNumberDevice, ["pf"]   ),
+}
 
 def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
     """Map a SolarEdge device to the plugin device"""
@@ -462,6 +481,15 @@ def Map(solaredge_device: solaredge.Device) -> MapDetails|None:
                 max_devices=MeterMaxDevices,
                 device_type=DeviceTypeMapping.METER,
                 mapping = DeltaConnectThreePhaseMeterDeviceMap
+                )
+
+        case solaredge.vendor.VendorPowerControl():
+            result = MapDetails(
+                start_offset=PowerControlStartOffset,
+                max_offset=PowerControlMaxOffset,
+                max_devices=PowerControlMaxDevices,
+                device_type=DeviceTypeMapping.POWER_CONTROL,
+                mapping = PowerControlDeviceMap
                 )
 
         case solaredge.vendor.VendorBattery():

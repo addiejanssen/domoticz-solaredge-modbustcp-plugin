@@ -3,6 +3,7 @@ from .counter import ManagedCounterEnergyDevice
 from .current import CurrentDevice
 from .energy import EnergyDevice, EnergyExportDevice, EnergyImportDevice
 from .frequency import FrequencyDevice
+from .generic import GenericNumberDevice
 from .percentage import PercentageDevice
 from .power import ApparentPowerDevice, PowerDevice, ReactivePowerDevice
 from .temperature import TemperatureDevice
@@ -17,6 +18,7 @@ __all__: list[str] = [
     "EnergyExportDevice",
     "EnergyImportDevice",
     "FrequencyDevice",
+    "GenericNumberDevice",
     "ManagedCounterEnergyDevice",
     "PercentageDevice",
     "PowerDevice",

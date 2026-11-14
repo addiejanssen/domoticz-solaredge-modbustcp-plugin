@@ -1,10 +1,13 @@
 from ..base import Device, SolarEdge
 from .battery import VendorBattery
+from .powercontrol import VendorPowerControl
 
 __all__: list[str] = [
     "VendorBattery",
     "scan",
 ]
+
+VENDOR_POWER_CONTROL_BASE_ADDRESS = 61440
 
 VENDOR_BATTERY_BASE_ADDRESS = 57600
 VENDOR_BATTERY_BLOCK_LENGTH = 256
@@ -18,6 +21,11 @@ def scan(inverter: SolarEdge, device_id: int) -> list[Device]:
     """
     devices: list[Device] = []
     index = 0
+
+    # Every SolarEdge inverter comes with Power Control
+    devices.append(VendorPowerControl(inverter=inverter, device_id=device_id, address=VENDOR_POWER_CONTROL_BASE_ADDRESS))
+
+    # Batteries are optional though
     while index < VENDOR_BATTERY_COUNT:
         address: int = VENDOR_BATTERY_BASE_ADDRESS + (index * VENDOR_BATTERY_BLOCK_LENGTH)
 
