@@ -2,6 +2,19 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
+## [3.0.0-dev.6] - 2026-xx-xx
+
+This is a bug fix release of the 3.x.x. version of the plugin.
+
+Users show that batteries are correctly detected, but measurements don't get updated.
+The "Battery Event Log" and "Battery Internal Event Log" measurements are (temporarily) removed to investigate if they are the cause of the issues.
+
+### Changed
+
+- (Temporarily) Removed the "Battery Event Log" and "Battery Internal Event Log" measurements.
+- The plugin now logs some information about the runtime environment.
+- Code cleanup and optimizations.
+
 ## [3.0.0-dev.5] - 2026-11-14
 
 This is a bug fix release of the 3.x.x. version of the plugin.

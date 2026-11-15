@@ -382,8 +382,8 @@ BatteryMaxDevices:int = 2
 BatteryDeviceMap: DeviceMapping = {
     BatteryUnit.STATUS:                   ("Status",                             domo.TextStatusDevice,           ["status"]   ),
     BatteryUnit.STATUS_INTERNAL:          ("Internal Status",                    domo.TextStatusDevice,           ["sti"]      ),
-    BatteryUnit.EVENT_LOG:                ("Event Log",                          domo.TextStatusDevice,           ["el"]       ),
-    BatteryUnit.EVENT_LOG_INTERNAL:       ("Internal Event Log",                 domo.TextStatusDevice,           ["eli"]      ),
+#    BatteryUnit.EVENT_LOG:                ("Event Log",                          domo.TextStatusDevice,           ["el"]       ),
+#    BatteryUnit.EVENT_LOG_INTERNAL:       ("Internal Event Log",                 domo.TextStatusDevice,           ["eli"]      ),
     BatteryUnit.RATED_ENERGY:             ("Rated Energy",                       domo.ManagedCounterEnergyDevice, ["re"]       ),
     BatteryUnit.MAX_CHARGE_CONT_POWER:    ("Maximum Charge Continuous Power",    domo.PowerDevice,                ["mccp"]     ),
     BatteryUnit.MAX_DISCHARGE_CONT_POWER: ("Maximum Discharge Continuous Power", domo.PowerDevice,                ["mdcp"]     ),
