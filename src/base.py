@@ -2,6 +2,7 @@
 This is where the actual work of the SolarEdge ModbusTCP plugin is done.
 """
 
+import platform
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -57,21 +58,25 @@ class SolarEdgeModbusPlugin:
 
         DomoLog(level=LogLevels.DEBUG, message="Entered onStart()")
 
-        DomoLog(level=LogLevels.NORMAL, message=f"pymodbus version [{pymodbus.__version__}]")
+        DomoLog(level=LogLevels.NORMAL, message="Runtime environment:")
+        DomoLog(level=LogLevels.NORMAL, message=f" Platform [{platform.platform()}]")
+        DomoLog(level=LogLevels.NORMAL, message=f" Python   [{platform.python_version()}]")
+        DomoLog(level=LogLevels.NORMAL, message=f" Domoticz [{parameters["DomoticzVersion"]}]")
+        DomoLog(level=LogLevels.NORMAL, message=f" Plugin   [{parameters["Version"]}]")
+        DomoLog(level=LogLevels.NORMAL, message=f" Pymodbus [{pymodbus.__version__}]")
 
-        self._domoticz_parameters: dict[str, object] = parameters
         self._domoticz_devices: dict[int, DomoticzDevice] = devices
 
         # Get the choices of the user and turn them into something we can use
 
         # Mode 1 defines if we should add missing devices or not
-        if self._domoticz_parameters["Mode1"] == "Yes":
+        if parameters["Mode1"] == "Yes":
             self._add_devices = True
         else:
             self._add_devices = False
 
         # Now set the interval at which the information is collected accordingly.
-        DomoticzHeartbeat(int(self._domoticz_parameters["Mode2"]))
+        DomoticzHeartbeat(int(parameters["Mode2"]))
 
         # Set the logging level
         # Version 1.x.x of the plugin used text values for Mode5 to define the logging level.
@@ -79,8 +84,8 @@ class SolarEdgeModbusPlugin:
         # The following code will check if the user is using the old or new version and set the logging level accordingly.
         # The old version will be removed in a future release.
 
-        if "Mode5" in self._domoticz_parameters:
-            match self._domoticz_parameters["Mode5"]:
+        if "Mode5" in parameters:
+            match parameters["Mode5"]:
                 case "Normal":
                     SetLogLevel(level=LogLevels.NORMAL)
                 case "Extra":
@@ -88,13 +93,13 @@ class SolarEdgeModbusPlugin:
                 case "Debug":
                     SetLogLevel(level=LogLevels.DEBUG)
                 case _:
-                    SetLogLevel(level=LogLevels(value=int(self._domoticz_parameters["Mode5"])))
+                    SetLogLevel(level=LogLevels(value=int(parameters["Mode5"])))
 
         # Lets get in touch with the inverter.
 
-        self._inverter_address = self._domoticz_parameters["Address"]
-        self._inverter_port = self._domoticz_parameters["Port"]
-        self._inverter_device_id = int(self._domoticz_parameters["Mode3"])
+        self._inverter_address = parameters["Address"]
+        self._inverter_port = parameters["Port"]
+        self._inverter_device_id = int(parameters["Mode3"])
         self._inverter = SolarEdge(hostname=self._inverter_address, port_number=self._inverter_port, timeout=15)
 
         self.connectToInverter()
