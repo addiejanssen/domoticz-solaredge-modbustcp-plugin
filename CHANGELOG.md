@@ -2,7 +2,7 @@
 
 This is the changelog of the Domoticz SolarEdge_ModbusTCP plugin.
 
-## [3.0.0-dev.6] - 2026-xx-xx
+## [3.0.0-dev.6] - 2026-11-15
 
 This is a bug fix release of the 3.x.x. version of the plugin.
 
